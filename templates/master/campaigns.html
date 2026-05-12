@@ -14,9 +14,19 @@
         <td>{{ c.start_date.strftime('%d/%m/%Y') if c.start_date else '-' }}</td>
         <td>{{ c.end_date.strftime('%d/%m/%Y') if c.end_date else '-' }}</td>
         <td><span class="badge bg-{{ 'secondary' if c.is_closed else 'success' }}">{{ 'Cerrada' if c.is_closed else 'Abierta' }}</span></td>
-        <td>
+        <td class="d-flex gap-1 flex-wrap">
             <button class="btn btn-outline-primary btn-action" data-bs-toggle="modal" data-bs-target="#edit{{ c.id }}">Editar</button>
-            {% if not c.is_closed %}<form method="POST" action="{{ url_for('master.campaign_close', id=c.id) }}" class="d-inline"><button class="btn btn-outline-warning btn-action" data-confirm="¿Cerrar campaña?">Cerrar</button></form>{% endif %}
+            {% if not c.is_closed %}
+            <form method="POST" action="{{ url_for('master.campaign_close', id=c.id) }}" class="d-inline">
+                <button class="btn btn-outline-warning btn-action" data-confirm="¿Cerrar campaña?">Cerrar</button>
+            </form>
+            {% endif %}
+            {% if current_user.role and current_user.role.name == 'Administrador' %}
+            <form method="POST" action="{{ url_for('master.campaign_delete', id=c.id) }}" class="d-inline"
+                  onsubmit="return confirm('¿Eliminar la campaña {{ c.name }}?\nEsta acción es irreversible.')">
+                <button class="btn btn-outline-danger btn-action"><i class="bi bi-trash3"></i></button>
+            </form>
+            {% endif %}
         </td>
     </tr>
     <!-- Modal editar campaña {{ c.id }} -->

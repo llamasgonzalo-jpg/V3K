@@ -20,6 +20,14 @@ def create_app():
     def load_user(user_id):
         return User.query.get(int(user_id))
 
+    # Bloqueo de escritura para rol Inspector/Auditor
+    @app.before_request
+    def block_inspector_writes():
+        if current_user.is_authenticated and request.method == 'POST':
+            if current_user.role and current_user.role.name == 'Auditor/Inspector':
+                flash('El rol Inspector solo tiene acceso de lectura.', 'warning')
+                return redirect(request.referrer or url_for('main.dashboard'))
+
     # Session timeout check (TRZ-007)
     @app.before_request
     def check_session_timeout():
@@ -39,9 +47,11 @@ def create_app():
     @app.context_processor
     def inject_globals():
         unread = 0
+        is_inspector = False
         if current_user.is_authenticated:
             unread = Notification.query.filter_by(user_id=current_user.id, is_read=False).count()
-        return dict(unread_notifications=unread, now=datetime.now(timezone.utc))
+            is_inspector = bool(current_user.role and current_user.role.name == 'Auditor/Inspector')
+        return dict(unread_notifications=unread, now=datetime.now(timezone.utc), is_inspector=is_inspector)
 
     # Register blueprints
     from blueprints.auth import auth_bp

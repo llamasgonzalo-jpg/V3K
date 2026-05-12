@@ -21,7 +21,13 @@
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navMain">
+            {% if is_inspector %}
+            <span class="navbar-text text-warning ms-2" style="font-size:.78rem;">
+                <i class="bi bi-eye"></i> Modo Solo Lectura
+            </span>
+            {% endif %}
             <ul class="navbar-nav me-auto">
+                {% if not is_inspector %}
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
                         <i class="bi bi-gear"></i> Admin
@@ -46,6 +52,7 @@
                         <li><a class="dropdown-item" href="{{ url_for('admin.audit_log') }}">Log de auditoría</a></li>
                     </ul>
                 </li>
+                {% endif %}
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
                         <i class="bi bi-building"></i> Maestros

@@ -272,7 +272,8 @@ class Genetic(db.Model):
     code = db.Column(db.String(100))
     origin = db.Column(db.String(200))
     expected_chemotype = db.Column(db.String(20))
-    registry_status = db.Column(db.String(50))  # INASE, SPIG-BCP, Banco
+    registry_status = db.Column(db.String(50))  # INASE, SPIG-BCP, Banco, Expediente
+    expediente_number = db.Column(db.String(100))  # Nº expediente cuando registry_status='Expediente'
     registry_expiry = db.Column(db.Date)
     spig_code = db.Column(db.String(100))
     is_active = db.Column(db.Boolean, default=True)

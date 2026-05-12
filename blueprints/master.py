@@ -107,6 +107,20 @@ def campaign_close(id):
     flash('Campaña cerrada.', 'success')
     return redirect(url_for('master.campaigns'))
 
+@master_bp.route('/campaigns/<int:id>/delete', methods=['POST'])
+@login_required
+def campaign_delete(id):
+    if not current_user.role or current_user.role.name != 'Administrador':
+        flash('No tenés permisos para eliminar campañas.', 'danger')
+        return redirect(url_for('master.campaigns'))
+    c = Campaign.query.get_or_404(id)
+    name = c.name
+    audit('DELETE', 'Campaign', id, f'Campaña eliminada: {name}')
+    db.session.delete(c)
+    db.session.commit()
+    flash(f'Campaña "{name}" eliminada.', 'success')
+    return redirect(url_for('master.campaigns'))
+
 # ── Genéticas (TRZ-027) ──
 
 @master_bp.route('/genetics')
@@ -128,6 +142,7 @@ def genetic_save():
     g.origin = request.form.get('origin', '')
     g.expected_chemotype = request.form.get('expected_chemotype', '')
     g.registry_status = request.form.get('registry_status', '')
+    g.expediente_number = request.form.get('expediente_number', '')
     g.spig_code = request.form.get('spig_code', '')
     if request.form.get('registry_expiry'):
         g.registry_expiry = datetime.strptime(request.form['registry_expiry'], '%Y-%m-%d').date()
