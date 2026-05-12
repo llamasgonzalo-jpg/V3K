@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Mi Perfil{% endblock %}
+{% block content %}
+<h4 class="section-title">Mi Perfil</h4>
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <p><strong>Usuario:</strong> {{ current_user.username }}</p>
+                <p><strong>Email:</strong> {{ current_user.email }}</p>
+                <p><strong>Nombre:</strong> {{ current_user.full_name or '-' }}</p>
+                <p><strong>Rol:</strong> {{ current_user.role.name if current_user.role else '-' }}</p>
+                <p><strong>Último ingreso:</strong> {{ current_user.last_login.strftime('%d/%m/%Y %H:%M') if current_user.last_login else '-' }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Cambiar Contraseña</div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">Contraseña actual</label>
+                        <input type="password" name="current_password" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nueva contraseña</label>
+                        <input type="password" name="new_password" class="form-control" required minlength="8">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Confirmar nueva contraseña</label>
+                        <input type="password" name="confirm_password" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-success">Actualizar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

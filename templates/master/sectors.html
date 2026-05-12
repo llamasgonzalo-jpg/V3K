@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Sectores - {{ site.name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="section-title mb-0"><i class="bi bi-grid-3x3"></i> Sectores de {{ site.name }}</h4>
+    <div><a href="{{ url_for('master.sites') }}" class="btn btn-outline-secondary btn-sm me-1">Volver</a>
+    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#newModal">+ Nuevo Sector</button></div>
+</div>
+<div class="row g-3">
+<div class="col-md-8">
+<div class="card"><div class="card-body p-0">
+<table class="table table-hover mb-0">
+    <thead><tr><th>Sector</th><th>Tipo</th><th>Capacidad</th><th></th></tr></thead>
+    <tbody>
+    {% for s in sectors %}
+    <tr><td><strong>{{ s.name }}</strong></td><td><span class="badge bg-info">{{ s.sector_type }}</span></td><td>{{ s.capacity or '-' }}</td>
+        <td><button class="btn btn-outline-primary btn-action" data-bs-toggle="modal" data-bs-target="#editS{{ s.id }}">Editar</button></td></tr>
+    <div class="modal fade" id="editS{{ s.id }}"><div class="modal-dialog"><div class="modal-content">
+        <form method="POST" action="{{ url_for('master.sector_save') }}"><input type="hidden" name="sector_id" value="{{ s.id }}"><input type="hidden" name="site_id" value="{{ site.id }}">
+        <div class="modal-header"><h5>Editar Sector</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <div class="mb-2"><label>Nombre *</label><input type="text" name="name" class="form-control" value="{{ s.name }}" required></div>
+            <div class="mb-2"><label>Tipo *</label><select name="sector_type" class="form-select">{% for t in ['propagacion','VG','FL','secado','curado','almacenamiento','proceso'] %}<option {{ 'selected' if s.sector_type==t }}>{{ t }}</option>{% endfor %}</select></div>
+            <div class="mb-2"><label>Capacidad</label><input type="number" name="capacity" class="form-control" value="{{ s.capacity or '' }}"></div>
+        </div>
+        <div class="modal-footer"><button type="submit" class="btn btn-success">Guardar</button></div></form>
+    </div></div></div>
+    {% endfor %}
+    </tbody>
+</table></div></div>
+</div>
+<div class="col-md-4">
+    <div class="card">
+        <div class="card-header">Vínculos Funcionales (Flujo)</div>
+        <div class="card-body">
+            {% for l in links %}
+            <div class="mb-1"><span class="badge bg-secondary">{{ l.origin.name }}</span> <i class="bi bi-arrow-right"></i> <span class="badge bg-primary">{{ l.destination.name }}</span></div>
+            {% endfor %}
+            <hr>
+            <form method="POST" action="{{ url_for('master.sector_link_save') }}">
+                <input type="hidden" name="site_id" value="{{ site.id }}">
+                <div class="mb-2"><label>Origen</label><select name="origin_id" class="form-select form-select-sm">{% for s in sectors %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select></div>
+                <div class="mb-2"><label>Destino</label><select name="destination_id" class="form-select form-select-sm">{% for s in sectors %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select></div>
+                <button class="btn btn-sm btn-outline-primary">Vincular</button>
+            </form>
+        </div>
+    </div>
+</div>
+</div>
+<div class="modal fade" id="newModal"><div class="modal-dialog"><div class="modal-content">
+    <form method="POST" action="{{ url_for('master.sector_save') }}"><input type="hidden" name="site_id" value="{{ site.id }}">
+    <div class="modal-header"><h5>Nuevo Sector</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <div class="mb-2"><label>Nombre *</label><input type="text" name="name" class="form-control" required></div>
+        <div class="mb-2"><label>Tipo *</label><select name="sector_type" class="form-select">{% for t in ['propagacion','VG','FL','secado','curado','almacenamiento','proceso'] %}<option>{{ t }}</option>{% endfor %}</select></div>
+        <div class="mb-2"><label>Capacidad</label><input type="number" name="capacity" class="form-control"></div>
+    </div>
+    <div class="modal-footer"><button type="submit" class="btn btn-success">Crear</button></div></form>
+</div></div></div>
+{% endblock %}

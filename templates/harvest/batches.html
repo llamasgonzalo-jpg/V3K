@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Batches{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="section-title mb-0"><i class="bi bi-collection"></i> Batches</h4>
+    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#newModal">+ Nuevo Batch</button>
+</div>
+<div class="card"><div class="card-body p-0">
+<table class="table table-hover mb-0">
+    <thead><tr><th>Código</th><th>CUL</th><th>Tipo</th><th>Estado</th><th>P. Húmedo</th><th>P. Seco</th><th>P. Actual</th><th>Calidad</th><th></th></tr></thead>
+    <tbody>
+    {% for b in batches %}
+    <tr><td><a href="{{ url_for('harvest.batch_detail', id=b.id) }}"><strong>{{ b.code }}</strong></a></td>
+        <td>{{ b.cul.code if b.cul else '-' }}</td><td>{{ b.batch_type }}</td>
+        <td><span class="badge bg-{{ 'info' if b.status=='Secado' else 'success' if b.status=='Deposito' else 'warning' if b.status=='Curado' else 'danger' if b.status in ('Retenido','Destruido') else 'secondary' }}">{{ b.status }}</span></td>
+        <td>{{ b.wet_weight or '-' }}</td><td>{{ b.dry_weight or '-' }}</td><td><strong>{{ b.current_weight or '-' }}</strong></td>
+        <td>{{ b.quality_category.name if b.quality_category else '-' }}</td>
+        <td><a href="{{ url_for('harvest.batch_detail', id=b.id) }}" class="btn btn-outline-primary btn-action">Ver</a></td></tr>
+    {% endfor %}
+    </tbody>
+</table></div></div>
+<div class="modal fade" id="newModal"><div class="modal-dialog"><div class="modal-content">
+    <form method="POST" action="{{ url_for('harvest.batch_create') }}">
+    <div class="modal-header"><h5>Nuevo Batch (Cosecha)</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <div class="mb-2"><label>CUL *</label><select name="cul_id" class="form-select" required>{% for c in culs %}<option value="{{ c.id }}">{{ c.code }}</option>{% endfor %}</select></div>
+        <div class="row g-2">
+            <div class="col"><label>Código (auto si vacío)</label><input type="text" name="code" class="form-control"></div>
+            <div class="col"><label>Tipo</label><select name="batch_type" class="form-select"><option>cosecha</option><option>sublote</option></select></div>
+        </div>
+        <div class="row g-2 mt-1">
+            <div class="col"><label>Peso húmedo (kg) *</label><input type="number" step="any" name="wet_weight" class="form-control" required></div>
+            <div class="col"><label>Equipo/Balanza</label><input type="text" name="equipment_used" class="form-control"></div>
+        </div>
+        <div class="row g-2 mt-1">
+            <div class="col"><label>Fecha/hora cosecha</label><input type="datetime-local" name="harvest_date" class="form-control"></div>
+            <div class="col"><label>Sector</label><select name="sector_id" class="form-select"><option value="">--</option>{% for s in sectors %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select></div>
+        </div>
+        <div class="mb-2 mt-1"><label>Notas</label><textarea name="notes" class="form-control" rows="2"></textarea></div>
+    </div>
+    <div class="modal-footer"><button type="submit" class="btn btn-success">Crear</button></div></form>
+</div></div></div>
+{% endblock %}

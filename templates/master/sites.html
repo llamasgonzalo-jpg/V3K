@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Predios{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="section-title mb-0"><i class="bi bi-geo-alt"></i> Predios</h4>
+    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#newModal">+ Nuevo Predio</button>
+</div>
+<div class="row g-3">
+{% for s in sites %}
+<div class="col-md-6">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between">
+            <span><strong>{{ s.name }}</strong></span>
+            <div>
+                <a href="{{ url_for('master.sectors', site_id=s.id) }}" class="btn btn-outline-info btn-action">Sectores</a>
+                <button class="btn btn-outline-primary btn-action" data-bs-toggle="modal" data-bs-target="#edit{{ s.id }}">Editar</button>
+            </div>
+        </div>
+        <div class="card-body">
+            <p class="mb-1"><i class="bi bi-house"></i> {{ s.address or 'Sin dirección' }}</p>
+            <p class="mb-1"><i class="bi bi-map"></i> Catastro: {{ s.cadastral_code or '-' }}</p>
+            {% if s.latitude %}<p class="mb-1"><i class="bi bi-pin-map"></i> {{ s.latitude }}, {{ s.longitude }}</p>{% endif %}
+            <p class="mb-0"><i class="bi bi-rulers"></i> Total: {{ s.total_area or '-' }} m² | Efectiva: {{ s.effective_area or '-' }} m²</p>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="edit{{ s.id }}"><div class="modal-dialog"><div class="modal-content">
+    <form method="POST" action="{{ url_for('master.site_save') }}"><input type="hidden" name="site_id" value="{{ s.id }}">
+    <div class="modal-header"><h5>Editar Predio</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <div class="mb-2"><label>Nombre *</label><input type="text" name="name" class="form-control" value="{{ s.name }}" required></div>
+        <div class="mb-2"><label>Dirección</label><textarea name="address" class="form-control" rows="2">{{ s.address or '' }}</textarea></div>
+        <div class="mb-2"><label>Nomenclatura catastral</label><input type="text" name="cadastral_code" class="form-control" value="{{ s.cadastral_code or '' }}"></div>
+        <div class="row"><div class="col"><label>Latitud</label><input type="number" step="any" name="latitude" class="form-control" value="{{ s.latitude or '' }}"></div>
+        <div class="col"><label>Longitud</label><input type="number" step="any" name="longitude" class="form-control" value="{{ s.longitude or '' }}"></div></div>
+        <div class="row mt-2"><div class="col"><label>Sup. total (m²)</label><input type="number" step="any" name="total_area" class="form-control" value="{{ s.total_area or '' }}"></div>
+        <div class="col"><label>Sup. efectiva (m²)</label><input type="number" step="any" name="effective_area" class="form-control" value="{{ s.effective_area or '' }}"></div></div>
+    </div>
+    <div class="modal-footer"><button type="submit" class="btn btn-success">Guardar</button></div></form>
+</div></div></div>
+{% endfor %}
+</div>
+<div class="modal fade" id="newModal"><div class="modal-dialog"><div class="modal-content">
+    <form method="POST" action="{{ url_for('master.site_save') }}">
+    <div class="modal-header"><h5>Nuevo Predio</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <div class="mb-2"><label>Nombre *</label><input type="text" name="name" class="form-control" required></div>
+        <div class="mb-2"><label>Dirección</label><textarea name="address" class="form-control" rows="2"></textarea></div>
+        <div class="mb-2"><label>Nomenclatura catastral</label><input type="text" name="cadastral_code" class="form-control"></div>
+        <div class="row"><div class="col"><label>Latitud</label><input type="number" step="any" name="latitude" class="form-control"></div>
+        <div class="col"><label>Longitud</label><input type="number" step="any" name="longitude" class="form-control"></div></div>
+        <div class="row mt-2"><div class="col"><label>Sup. total (m²)</label><input type="number" step="any" name="total_area" class="form-control"></div>
+        <div class="col"><label>Sup. efectiva (m²)</label><input type="number" step="any" name="effective_area" class="form-control"></div></div>
+    </div>
+    <div class="modal-footer"><button type="submit" class="btn btn-success">Crear</button></div></form>
+</div></div></div>
+{% endblock %}

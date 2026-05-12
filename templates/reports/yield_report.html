@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Reporte de Rendimiento{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="section-title mb-0"><i class="bi bi-graph-up"></i> Reporte de Rendimiento</h4>
+    <a href="{{ url_for('reports.index') }}" class="btn btn-outline-secondary btn-sm">Volver</a>
+</div>
+<div class="card"><div class="card-body p-0">
+<table class="table table-hover mb-0">
+    <thead><tr><th>Batch</th><th>CUL</th><th>Peso húmedo (kg)</th><th>Peso seco (kg)</th><th>Pérdida (kg)</th><th>% Pérdida</th></tr></thead>
+    <tbody>{% for d in data %}
+    <tr><td><strong>{{ d.batch }}</strong></td><td>{{ d.cul }}</td>
+        <td>{{ d.wet }}</td><td>{{ d.dry }}</td><td>{{ d.loss }}</td>
+        <td><span class="badge bg-{{ 'danger' if d.pct > 80 else 'warning' if d.pct > 60 else 'success' }}">{{ d.pct }}%</span></td></tr>
+    {% endfor %}</tbody>
+</table></div></div>
+{% endblock %}

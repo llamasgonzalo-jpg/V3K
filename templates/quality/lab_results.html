@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Resultados - {{ sample.code }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="section-title mb-0"><i class="bi bi-journal-medical"></i> Muestra: {{ sample.code }}</h4>
+    <a href="{{ url_for('quality.samples') }}" class="btn btn-outline-secondary btn-sm">Volver</a>
+</div>
+<div class="card mb-3"><div class="card-body">
+    <div class="row">
+        <div class="col-md-3"><small class="text-muted">Estado</small><br><span class="badge bg-{{ 'success' if sample.status=='Con resultado' else 'warning' if sample.status=='Enviada' else 'secondary' }}">{{ sample.status }}</span></div>
+        <div class="col-md-3"><small class="text-muted">CUL</small><br>{{ sample.cul.code if sample.cul else '-' }}</div>
+        <div class="col-md-3"><small class="text-muted">Batch</small><br>{{ sample.batch.code if sample.batch else '-' }}</div>
+        <div class="col-md-3"><small class="text-muted">Laboratorio</small><br>{{ sample.lab_name or '-' }}</div>
+    </div>
+</div></div>
+<div class="card mb-3"><div class="card-header">Resultados de Laboratorio</div><div class="card-body p-0">
+<table class="table table-sm mb-0">
+    <thead><tr><th>Laboratorio</th><th>Acreditado</th><th>Tipo análisis</th><th>Método</th><th>COA</th><th>Conforme</th><th>Resultados</th></tr></thead>
+    <tbody>{% for r in results %}
+    <tr><td>{{ r.lab_name }}</td>
+        <td>{{ 'Sí' if r.lab_accredited else 'No' }}</td>
+        <td>{{ r.analysis_type }}</td><td>{{ r.method }}</td>
+        <td>{{ r.coa_reference or '-' }}</td>
+        <td><span class="badge bg-{{ 'success' if r.is_conforming else 'danger' }}">{{ 'Sí' if r.is_conforming else 'No' }}</span></td>
+        <td class="small">{{ r.results }}</td></tr>
+    {% endfor %}</tbody>
+</table></div></div>
+{% if sample.status != 'Pendiente' %}
+<div class="card"><div class="card-header">Cargar Resultado</div><div class="card-body">
+<form method="POST" action="{{ url_for('quality.add_result', id=sample.id) }}">
+    <div class="row g-2">
+        <div class="col-md-3"><label>Laboratorio *</label><input type="text" name="lab_name" class="form-control" required></div>
+        <div class="col-md-2"><label>Tipo análisis</label><input type="text" name="analysis_type" class="form-control"></div>
+        <div class="col-md-2"><label>Método</label><input type="text" name="method" class="form-control"></div>
+        <div class="col-md-2"><label>Ref. COA</label><input type="text" name="coa_reference" class="form-control"></div>
+        <div class="col-md-3"><div class="form-check mt-4"><input type="checkbox" name="lab_accredited" class="form-check-input"><label class="form-check-label">Lab acreditado</label></div></div>
+    </div>
+    <div class="row g-2 mt-2">
+        <div class="col-md-9"><label>Resultados *</label><textarea name="results" class="form-control" rows="2" required></textarea></div>
+        <div class="col-md-3">
+            <div class="form-check mt-4"><input type="checkbox" name="is_conforming" class="form-check-input" checked><label class="form-check-label">Conforme</label></div>
+            <button type="submit" class="btn btn-success btn-sm mt-2">Guardar resultado</button>
+        </div>
+    </div>
+</form></div></div>
+{% endif %}
+{% endblock %}

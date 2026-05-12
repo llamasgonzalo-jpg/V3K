@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Ajustes de Inventario{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="section-title mb-0"><i class="bi bi-arrow-repeat"></i> Ajustes de Inventario</h4>
+    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#newModal">+ Nuevo Ajuste</button>
+</div>
+<div class="card"><div class="card-body p-0">
+<table class="table table-hover mb-0">
+    <thead><tr><th>Fecha</th><th>Insumo</th><th>Depósito</th><th>Cantidad</th><th>Motivo</th></tr></thead>
+    <tbody>
+    {% for a in adjustments %}
+    <tr><td>{{ a.adjusted_at.strftime('%d/%m/%Y %H:%M') if a.adjusted_at else '' }}</td>
+        <td>{{ '-' }}</td><td>{{ '-' }}</td>
+        <td class="{{ 'text-success' if a.quantity > 0 else 'text-danger' }}"><strong>{{ '+' if a.quantity > 0 else '' }}{{ a.quantity }}</strong></td>
+        <td>{{ a.reason }}</td></tr>
+    {% endfor %}
+    </tbody>
+</table></div></div>
+<div class="modal fade" id="newModal"><div class="modal-dialog"><div class="modal-content">
+    <form method="POST" action="{{ url_for('inventory.adjustment_create') }}">
+    <div class="modal-header"><h5>Nuevo Ajuste</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <div class="mb-2"><label>Insumo *</label><select name="supply_id" class="form-select" required>{% for s in supplies %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select></div>
+        <div class="mb-2"><label>Depósito</label><select name="warehouse_id" class="form-select"><option value="">--</option>{% for w in warehouses %}<option value="{{ w.id }}">{{ w.name }}</option>{% endfor %}</select></div>
+        <div class="mb-2"><label>Cantidad (+ o -) *</label><input type="number" step="any" name="quantity" class="form-control" required></div>
+        <div class="mb-2"><label>Motivo *</label><textarea name="reason" class="form-control" rows="2" required></textarea></div>
+    </div>
+    <div class="modal-footer"><button type="submit" class="btn btn-success">Registrar</button></div></form>
+</div></div></div>
+{% endblock %}

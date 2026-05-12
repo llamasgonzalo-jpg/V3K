@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Orden {{ order.code }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="section-title mb-0"><i class="bi bi-moisture"></i> Orden: {{ order.code }}</h4>
+    <div><a href="{{ url_for('processing.orders') }}" class="btn btn-outline-secondary btn-sm">Volver</a>
+    {% if order.status != 'Cerrada' %}<form method="POST" action="{{ url_for('processing.order_close', id=order.id) }}" class="d-inline"><button class="btn btn-outline-success btn-sm" data-confirm="¿Cerrar orden?">Cerrar Orden</button></form>{% endif %}</div>
+</div>
+<div class="card mb-3"><div class="card-body">
+    <div class="row">
+        <div class="col-md-3"><small class="text-muted">Estado</small><br><span class="badge bg-{{ 'success' if order.status=='Cerrada' else 'info' }}">{{ order.status }}</span></div>
+        <div class="col-md-3"><small class="text-muted">Objetivo</small><br>{{ order.objective or '-' }}</div>
+        <div class="col-md-3"><small class="text-muted">Instalación</small><br>{{ order.facility or '-' }} ({{ order.facility_type }})</div>
+        <div class="col-md-3"><small class="text-muted">Fecha</small><br>{{ order.created_at.strftime('%d/%m/%Y') if order.created_at else '' }}</div>
+    </div>
+</div></div>
+<div class="row g-3">
+<div class="col-md-6">
+    <div class="card"><div class="card-header bg-primary text-white">Entradas (Inputs)</div><div class="card-body p-0">
+    <table class="table table-sm mb-0">
+        <thead><tr><th>Batch</th><th>Cantidad</th></tr></thead>
+        <tbody>{% for i in order.inputs %}<tr><td>{{ i.batch_id }}</td><td>{{ i.quantity }}</td></tr>{% endfor %}</tbody>
+    </table>
+    {% if order.status != 'Cerrada' %}
+    <div class="p-2"><form method="POST" action="{{ url_for('processing.add_input', id=order.id) }}" class="row g-1">
+        <div class="col-5"><select name="batch_id" class="form-select form-select-sm" required>{% for b in batches %}<option value="{{ b.id }}">{{ b.code }} ({{ b.current_weight }}kg)</option>{% endfor %}</select></div>
+        <div class="col-3"><input type="number" step="any" name="quantity" class="form-control form-control-sm" placeholder="Cant." required></div>
+        <div class="col-2"><select name="unit_id" class="form-select form-select-sm"><option value="">--</option>{% for u in units %}<option value="{{ u.id }}">{{ u.abbreviation }}</option>{% endfor %}</select></div>
+        <div class="col-2"><button class="btn btn-sm btn-primary w-100">+</button></div>
+    </form></div>{% endif %}
+    </div></div>
+</div>
+<div class="col-md-6">
+    <div class="card"><div class="card-header bg-success text-white">Salidas (Outputs)</div><div class="card-body p-0">
+    <table class="table table-sm mb-0">
+        <thead><tr><th>Producto/Batch</th><th>Cantidad</th><th>Tipo</th></tr></thead>
+        <tbody>{% for o in order.outputs %}<tr><td>{{ o.batch_id or o.product_id or '-' }}</td><td>{{ o.quantity }}</td><td>{{ 'Residuo' if o.is_waste else 'Producto' }}</td></tr>{% endfor %}</tbody>
+    </table>
+    {% if order.status != 'Cerrada' %}
+    <div class="p-2"><form method="POST" action="{{ url_for('processing.add_output', id=order.id) }}" class="row g-1">
+        <div class="col-3"><input type="number" step="any" name="quantity" class="form-control form-control-sm" placeholder="Cant." required></div>
+        <div class="col-3"><select name="product_id" class="form-select form-select-sm"><option value="">Producto</option>{% for p in products %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}</select></div>
+        <div class="col-2"><select name="unit_id" class="form-select form-select-sm"><option value="">--</option>{% for u in units %}<option value="{{ u.id }}">{{ u.abbreviation }}</option>{% endfor %}</select></div>
+        <div class="col-2"><div class="form-check mt-1"><input type="checkbox" name="is_waste" class="form-check-input"><label class="form-check-label small">Residuo</label></div></div>
+        <div class="col-2"><button class="btn btn-sm btn-success w-100">+</button></div>
+    </form></div>{% endif %}
+    </div></div>
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Planes de Muestreo{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="section-title mb-0"><i class="bi bi-clipboard2-pulse"></i> Planes de Muestreo</h4>
+    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#newModal">+ Nuevo</button>
+</div>
+<div class="card"><div class="card-body p-0">
+<table class="table table-hover mb-0">
+    <thead><tr><th>Quimiotipo</th><th>Frecuencia</th><th>Tamaño muestra</th><th>Puntos</th><th></th></tr></thead>
+    <tbody>{% for p in plans %}
+    <tr><td><strong>{{ p.chemotype }}</strong></td><td>{{ p.frequency or '-' }}</td><td>{{ p.sample_size or '-' }}</td>
+        <td class="small">{{ p.process_points or '-' }}</td>
+        <td><button class="btn btn-outline-primary btn-action" data-bs-toggle="modal" data-bs-target="#edit{{ p.id }}">Editar</button></td></tr>
+    <div class="modal fade" id="edit{{ p.id }}"><div class="modal-dialog"><div class="modal-content">
+        <form method="POST" action="{{ url_for('quality.sampling_plan_save') }}"><input type="hidden" name="plan_id" value="{{ p.id }}">
+        <div class="modal-header"><h5>Editar Plan</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <div class="mb-2"><label>Quimiotipo *</label><select name="chemotype" class="form-select">{% for q in ['Q1','Q2','Q3','Q4','Q5'] %}<option {{ 'selected' if p.chemotype==q }}>{{ q }}</option>{% endfor %}</select></div>
+            <div class="mb-2"><label>Frecuencia</label><input type="text" name="frequency" class="form-control" value="{{ p.frequency or '' }}"></div>
+            <div class="mb-2"><label>Tamaño muestra</label><input type="number" name="sample_size" class="form-control" value="{{ p.sample_size or '' }}"></div>
+            <div class="mb-2"><label>Puntos de proceso</label><textarea name="process_points" class="form-control" rows="2">{{ p.process_points or '' }}</textarea></div>
+            <div class="mb-2"><label>Protocolo custodia</label><textarea name="custody_protocol" class="form-control" rows="2">{{ p.custody_protocol or '' }}</textarea></div>
+        </div>
+        <div class="modal-footer"><button type="submit" class="btn btn-success">Guardar</button></div></form>
+    </div></div></div>
+    {% endfor %}</tbody>
+</table></div></div>
+<div class="modal fade" id="newModal"><div class="modal-dialog"><div class="modal-content">
+    <form method="POST" action="{{ url_for('quality.sampling_plan_save') }}">
+    <div class="modal-header"><h5>Nuevo Plan de Muestreo</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <div class="mb-2"><label>Quimiotipo *</label><select name="chemotype" class="form-select"><option>Q1</option><option>Q2</option><option>Q3</option><option>Q4</option><option>Q5</option></select></div>
+        <div class="mb-2"><label>Frecuencia</label><input type="text" name="frequency" class="form-control"></div>
+        <div class="mb-2"><label>Tamaño muestra</label><input type="number" name="sample_size" class="form-control"></div>
+        <div class="mb-2"><label>Puntos de proceso</label><textarea name="process_points" class="form-control" rows="2"></textarea></div>
+        <div class="mb-2"><label>Protocolo custodia</label><textarea name="custody_protocol" class="form-control" rows="2"></textarea></div>
+    </div>
+    <div class="modal-footer"><button type="submit" class="btn btn-success">Crear</button></div></form>
+</div></div></div>
+{% endblock %}

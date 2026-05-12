@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Reporte de Auditoría{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="section-title mb-0"><i class="bi bi-file-earmark-text"></i> Reporte de Auditoría por CUL</h4>
+    <a href="{{ url_for('reports.index') }}" class="btn btn-outline-secondary btn-sm">Volver</a>
+</div>
+<div class="card mb-3"><div class="card-body">
+<form method="GET" class="row g-2">
+    <div class="col-md-4"><select name="cul_id" class="form-select">
+        <option value="">Seleccionar CUL</option>
+        {% for c in culs %}<option value="{{ c.id }}">{{ c.code }}</option>{% endfor %}
+    </select></div>
+    <div class="col-md-2"><button class="btn btn-primary">Ver</button></div>
+</form></div></div>
+{% if data %}
+<div class="card mb-3"><div class="card-header bg-primary text-white">CUL: {{ data.cul.code }} - Auditoría completa</div><div class="card-body">
+    <div class="row">
+        <div class="col-md-3"><small class="text-muted">Etapa</small><br>{{ data.cul.stage }}</div>
+        <div class="col-md-3"><small class="text-muted">Quimiotipo</small><br>{{ data.cul.chemotype or '-' }}</div>
+        <div class="col-md-3"><small class="text-muted">Estado</small><br>{{ data.cul.status }}</div>
+        <div class="col-md-3"><small class="text-muted">Bloqueado</small><br>{{ 'Sí' if data.cul.is_blocked else 'No' }}</div>
+    </div>
+</div></div>
+{% if data.events %}
+<div class="card mb-3"><div class="card-header">Eventos cronológicos</div><div class="card-body p-0">
+<table class="table table-sm mb-0">
+    <thead><tr><th>Fecha</th><th>Tipo</th><th>Categoría</th><th>Detalle</th><th>Usuario</th></tr></thead>
+    <tbody>{% for e in data.events %}
+    <tr><td>{{ e.date.strftime('%d/%m/%Y') if e.date else '' }}</td><td>{{ e.event_type.name if e.event_type else '-' }}</td>
+        <td>{{ e.category or '-' }}</td><td class="small">{{ e.notes or '-' }}</td><td>{{ e.user.username if e.user else '-' }}</td></tr>
+    {% endfor %}</tbody>
+</table></div></div>
+{% endif %}
+{% if data.batches %}
+<div class="card mb-3"><div class="card-header">Batches asociados</div><div class="card-body p-0">
+<table class="table table-sm mb-0">
+    <thead><tr><th>Código</th><th>Tipo</th><th>Estado</th><th>Peso húmedo</th><th>Peso seco</th><th>Peso actual</th></tr></thead>
+    <tbody>{% for b in data.batches %}
+    <tr><td>{{ b.code }}</td><td>{{ b.batch_type or '-' }}</td><td>{{ b.status }}</td>
+        <td>{{ b.wet_weight or '-' }}</td><td>{{ b.dry_weight or '-' }}</td><td>{{ b.current_weight or 0 }} kg</td></tr>
+    {% endfor %}</tbody>
+</table></div></div>
+{% endif %}
+{% if data.samples %}
+<div class="card mb-3"><div class="card-header">Muestras y resultados</div><div class="card-body p-0">
+<table class="table table-sm mb-0">
+    <thead><tr><th>Muestra</th><th>Estado</th><th>Laboratorio</th><th>Fecha</th></tr></thead>
+    <tbody>{% for s in data.samples %}
+    <tr><td>{{ s.code }}</td><td>{{ s.status }}</td><td>{{ s.lab_name or '-' }}</td><td>{{ s.created_at.strftime('%d/%m/%Y') if s.created_at else '' }}</td></tr>
+    {% endfor %}</tbody>
+</table></div></div>
+{% endif %}
+{% if data.audit_trail %}
+<div class="card mb-3"><div class="card-header">Trail de auditoría</div><div class="card-body p-0">
+<table class="table table-sm mb-0">
+    <thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Detalles</th></tr></thead>
+    <tbody>{% for a in data.audit_trail %}
+    <tr><td>{{ a.created_at.strftime('%d/%m/%Y %H:%M') if a.created_at else '' }}</td>
+        <td>{{ a.user.username if a.user else '-' }}</td><td>{{ a.action }}</td><td class="small">{{ a.details or '-' }}</td></tr>
+    {% endfor %}</tbody>
+</table></div></div>
+{% endif %}
+{% endif %}
+{% endblock %}

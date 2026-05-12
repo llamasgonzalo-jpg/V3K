@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Tolerancias{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="section-title mb-0"><i class="bi bi-sliders"></i> Tolerancias por Quimiotipo</h4>
+    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#newModal">+ Nueva</button>
+</div>
+<div class="card"><div class="card-body p-0">
+<table class="table table-hover mb-0">
+    <thead><tr><th>Quimiotipo</th><th>Tolerancia %</th><th>Aplica a</th><th></th></tr></thead>
+    <tbody>
+    {% for t in items %}
+    <tr><td><span class="badge bg-info">{{ t.chemotype }}</span></td><td>± {{ t.tolerance_pct }}%</td><td>{{ t.applies_to or '-' }}</td>
+        <td><button class="btn btn-outline-primary btn-action" data-bs-toggle="modal" data-bs-target="#edit{{ t.id }}">Editar</button></td></tr>
+    <div class="modal fade" id="edit{{ t.id }}"><div class="modal-dialog"><div class="modal-content">
+        <form method="POST"><input type="hidden" name="item_id" value="{{ t.id }}">
+        <div class="modal-header"><h5>Editar</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <div class="mb-2"><label>Quimiotipo</label><select name="chemotype" class="form-select">{% for q in ['Q1','Q2','Q3','Q4','Q5'] %}<option {{ 'selected' if t.chemotype==q }}>{{ q }}</option>{% endfor %}</select></div>
+            <div class="mb-2"><label>Tolerancia %</label><input type="number" name="tolerance_pct" class="form-control" value="{{ t.tolerance_pct }}" step="0.1" required></div>
+            <div class="mb-2"><label>Aplica a</label><select name="applies_to" class="form-select"><option value="plantas" {{ 'selected' if t.applies_to=='plantas' }}>Plantas</option><option value="superficie" {{ 'selected' if t.applies_to=='superficie' }}>Superficie</option><option value="rendimiento" {{ 'selected' if t.applies_to=='rendimiento' }}>Rendimiento</option></select></div>
+        </div>
+        <div class="modal-footer"><button type="submit" class="btn btn-success">Guardar</button></div></form>
+    </div></div></div>
+    {% endfor %}
+    </tbody>
+</table></div></div>
+<div class="modal fade" id="newModal"><div class="modal-dialog"><div class="modal-content">
+    <form method="POST"><div class="modal-header"><h5>Nueva Tolerancia</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <div class="mb-2"><label>Quimiotipo</label><select name="chemotype" class="form-select">{% for q in ['Q1','Q2','Q3','Q4','Q5'] %}<option>{{ q }}</option>{% endfor %}</select></div>
+        <div class="mb-2"><label>Tolerancia %</label><input type="number" name="tolerance_pct" class="form-control" step="0.1" required></div>
+        <div class="mb-2"><label>Aplica a</label><select name="applies_to" class="form-select"><option value="plantas">Plantas</option><option value="superficie">Superficie</option><option value="rendimiento">Rendimiento</option></select></div>
+    </div>
+    <div class="modal-footer"><button type="submit" class="btn btn-success">Crear</button></div></form>
+</div></div></div>
+{% endblock %}

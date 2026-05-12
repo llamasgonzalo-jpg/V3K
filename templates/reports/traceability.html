@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Trazabilidad{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="section-title mb-0"><i class="bi bi-search"></i> Trazabilidad Completa</h4>
+    <a href="{{ url_for('reports.index') }}" class="btn btn-outline-secondary btn-sm">Volver</a>
+</div>
+<div class="card mb-3"><div class="card-body">
+<form method="GET" class="row g-2">
+    <div class="col-md-6"><input type="text" name="q" class="form-control" placeholder="Buscar por código CUL o Batch..." value="{{ search }}"></div>
+    <div class="col-md-2"><button class="btn btn-primary">Buscar</button></div>
+</form></div></div>
+{% if result %}
+{% if result.cul %}
+<div class="card mb-3"><div class="card-header bg-primary text-white">CUL: {{ result.cul.code }}</div><div class="card-body">
+    <div class="row">
+        <div class="col-md-2"><small class="text-muted">Etapa</small><br>{{ result.cul.stage }}</div>
+        <div class="col-md-2"><small class="text-muted">Quimiotipo</small><br>{{ result.cul.chemotype or '-' }}</div>
+        <div class="col-md-2"><small class="text-muted">Finalidad</small><br>{{ result.cul.purpose or '-' }}</div>
+        <div class="col-md-2"><small class="text-muted">Plantas</small><br>{{ result.cul.plant_count or '-' }}</div>
+        <div class="col-md-2"><small class="text-muted">Estado</small><br>{{ result.cul.status }}</div>
+        <div class="col-md-2"><small class="text-muted">Bloqueado</small><br>{{ 'Sí' if result.cul.is_blocked else 'No' }}</div>
+    </div>
+</div></div>
+{% if result.events %}
+<div class="card mb-3"><div class="card-header">Eventos ({{ result.events|length }})</div><div class="card-body p-0">
+<table class="table table-sm mb-0">
+    <thead><tr><th>Fecha</th><th>Tipo</th><th>Categoría</th><th>Detalle</th></tr></thead>
+    <tbody>{% for e in result.events %}
+    <tr><td>{{ e.date.strftime('%d/%m/%Y') if e.date else '' }}</td><td>{{ e.event_type.name if e.event_type else e.event_type_id }}</td>
+        <td>{{ e.category or '-' }}</td><td class="small">{{ e.notes or '-' }}</td></tr>
+    {% endfor %}</tbody>
+</table></div></div>
+{% endif %}
+{% if result.movements %}
+<div class="card mb-3"><div class="card-header">Movimientos ({{ result.movements|length }})</div><div class="card-body p-0">
+<table class="table table-sm mb-0">
+    <thead><tr><th>Fecha</th><th>Desde</th><th>Hacia</th><th>Motivo</th></tr></thead>
+    <tbody>{% for m in result.movements %}
+    <tr><td>{{ m.date.strftime('%d/%m/%Y') if m.date else '' }}</td><td>{{ m.from_sector.name if m.from_sector else '-' }}</td>
+        <td>{{ m.to_sector.name if m.to_sector else '-' }}</td><td>{{ m.reason or '-' }}</td></tr>
+    {% endfor %}</tbody>
+</table></div></div>
+{% endif %}
+{% if result.batches %}
+<div class="card mb-3"><div class="card-header">Batches ({{ result.batches|length }})</div><div class="card-body p-0">
+<table class="table table-sm mb-0">
+    <thead><tr><th>Código</th><th>Tipo</th><th>Estado</th><th>Peso actual</th></tr></thead>
+    <tbody>{% for b in result.batches %}
+    <tr><td>{{ b.code }}</td><td>{{ b.batch_type or '-' }}</td><td>{{ b.status }}</td><td>{{ b.current_weight or 0 }} kg</td></tr>
+    {% endfor %}</tbody>
+</table></div></div>
+{% endif %}
+{% if result.samples %}
+<div class="card mb-3"><div class="card-header">Muestras ({{ result.samples|length }})</div><div class="card-body p-0">
+<table class="table table-sm mb-0">
+    <thead><tr><th>Código</th><th>Estado</th><th>Laboratorio</th></tr></thead>
+    <tbody>{% for s in result.samples %}
+    <tr><td>{{ s.code }}</td><td>{{ s.status }}</td><td>{{ s.lab_name or '-' }}</td></tr>
+    {% endfor %}</tbody>
+</table></div></div>
+{% endif %}
+{% if result.notifications %}
+<div class="card mb-3"><div class="card-header">Notificaciones RPCCI ({{ result.notifications|length }})</div><div class="card-body p-0">
+<table class="table table-sm mb-0">
+    <thead><tr><th>Tipo</th><th>Estado</th><th>Fecha</th></tr></thead>
+    <tbody>{% for n in result.notifications %}
+    <tr><td>{{ n.notification_type }}</td><td>{{ n.status }}</td><td>{{ n.created_at.strftime('%d/%m/%Y') if n.created_at else '' }}</td></tr>
+    {% endfor %}</tbody>
+</table></div></div>
+{% endif %}
+{% elif result.batch %}
+<div class="card"><div class="card-header bg-success text-white">Batch: {{ result.batch.code }}</div><div class="card-body">
+    <p>CUL asociado: {{ result.cul.code if result.cul else '-' }}</p>
+    <p>Estado: {{ result.batch.status }} | Peso: {{ result.batch.current_weight or 0 }} kg</p>
+</div></div>
+{% endif %}
+{% elif search %}
+<div class="alert alert-warning">No se encontraron resultados para "{{ search }}".</div>
+{% endif %}
+{% endblock %}

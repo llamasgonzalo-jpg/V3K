@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Base de datos local
+*.db
+*.sqlite
+*.sqlite3
+
+# Variables de entorno y secretos
+.env
+.env.*
+secrets.py
+
+# Archivos subidos por usuarios
+uploads/
+
+# IDE y sistema
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Claude Code
+.claude/
+
+# Logs
+*.log
+logs/
+
+# Cookies
+cookies.txt

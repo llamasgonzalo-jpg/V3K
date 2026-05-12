@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}CUL - Lotes{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="section-title mb-0"><i class="bi bi-flower1"></i> Códigos Únicos de Lote (CUL)</h4>
+    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#newModal">+ Nuevo CUL</button>
+</div>
+<div class="card"><div class="card-body p-0">
+<table class="table table-hover mb-0">
+    <thead><tr><th>Código</th><th>Año</th><th>Etapa</th><th>Finalidad</th><th>Quimiotipo</th><th>Genética</th><th>Plantas</th><th>Estado</th><th></th></tr></thead>
+    <tbody>
+    {% for c in culs %}
+    <tr>
+        <td><a href="{{ url_for('cultivation.cul_detail', id=c.id) }}"><strong>{{ c.code }}</strong></a></td>
+        <td>{{ c.year }}</td>
+        <td><span class="badge bg-primary badge-stage">{{ c.stage or '-' }}</span></td>
+        <td>{{ c.purpose or '-' }}</td>
+        <td><span class="badge bg-info">{{ c.chemotype or '-' }}</span></td>
+        <td>{{ c.genetic.name if c.genetic else '-' }}</td>
+        <td>{{ c.plant_count }}</td>
+        <td><span class="badge bg-{{ 'success' if c.status=='Activo' else 'danger' if c.status=='Bloqueado' else 'secondary' }}">{{ c.status }}</span></td>
+        <td><a href="{{ url_for('cultivation.cul_detail', id=c.id) }}" class="btn btn-outline-primary btn-action">Ver</a></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table></div></div>
+
+<div class="modal fade" id="newModal"><div class="modal-dialog modal-lg"><div class="modal-content">
+    <form method="POST" action="{{ url_for('cultivation.cul_create') }}">
+    <div class="modal-header"><h5>Nuevo CUL</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <div class="row g-2">
+            <div class="col-md-6"><label>Código CUL *</label><input type="text" name="code" class="form-control" required placeholder="2026-PERM-PRED-SALA-001-VG"></div>
+            <div class="col-md-3"><label>Año *</label><input type="number" name="year" class="form-control" value="2026" required></div>
+            <div class="col-md-3"><label>Nº Lote</label><input type="number" name="lot_number" class="form-control"></div>
+        </div>
+        <div class="row g-2 mt-1">
+            <div class="col-md-4"><label>Permiso/Proyecto</label><input type="text" name="permit_project" class="form-control"></div>
+            <div class="col-md-4"><label>Sitio</label><select name="site_id" class="form-select" data-load-sectors="sectorSel"><option value="">--</option>{% for s in sites %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select></div>
+            <div class="col-md-4"><label>Sector</label><select name="sector_id" id="sectorSel" class="form-select"><option value="">--</option></select></div>
+        </div>
+        <div class="row g-2 mt-1">
+            <div class="col-md-3"><label>Etapa *</label><select name="stage" class="form-select"><option>VG</option><option>FL</option><option>PC</option><option>DIM</option></select></div>
+            <div class="col-md-3"><label>Finalidad *</label><select name="purpose" class="form-select"><option value="produccion">Producción</option><option value="fitomejoramiento">Fitomejoramiento</option><option value="I+D">I+D</option><option value="biomasa">Biomasa</option></select></div>
+            <div class="col-md-3"><label>Quimiotipo</label><select name="chemotype" class="form-select"><option value="">--</option>{% for q in ['Q1','Q2','Q3','Q4','Q5'] %}<option>{{ q }}</option>{% endfor %}</select></div>
+            <div class="col-md-3"><label>Plantas</label><input type="number" name="plant_count" class="form-control" value="0"></div>
+        </div>
+        <div class="row g-2 mt-1">
+            <div class="col-md-4"><label>Genética</label><select name="genetic_id" class="form-select"><option value="">--</option>{% for g in genetics %}<option value="{{ g.id }}">{{ g.name }}</option>{% endfor %}</select></div>
+            <div class="col-md-4"><label>Campaña</label><select name="campaign_id" class="form-select"><option value="">--</option>{% for ca in campaigns %}<option value="{{ ca.id }}">{{ ca.name }}</option>{% endfor %}</select></div>
+            <div class="col-md-4"><label>Grupo Floración</label><select name="flowering_group_id" class="form-select"><option value="">--</option>{% for g in groups %}<option value="{{ g.id }}">{{ g.code }}</option>{% endfor %}</select></div>
+        </div>
+        <div class="row g-2 mt-1">
+            <div class="col-md-6"><label>Superficie declarada (m²)</label><input type="number" step="any" name="declared_area" class="form-control"></div>
+            <div class="col-md-6"><label>Responsable Técnico</label><input type="text" name="responsible_tech" class="form-control"></div>
+        </div>
+    </div>
+    <div class="modal-footer"><button type="submit" class="btn btn-success">Crear CUL</button></div>
+    </form>
+</div></div></div>
+{% endblock %}

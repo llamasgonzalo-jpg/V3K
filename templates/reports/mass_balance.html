@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Balance de Masa{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="section-title mb-0"><i class="bi bi-balance-scale"></i> Balance de Masa</h4>
+    <a href="{{ url_for('reports.index') }}" class="btn btn-outline-secondary btn-sm">Volver</a>
+</div>
+<div class="card"><div class="card-body p-0">
+<table class="table table-hover mb-0">
+    <thead><tr><th>Orden</th><th>Estado</th><th>Entrada (kg)</th><th>Salida (kg)</th><th>Residuo (kg)</th><th>Diferencia</th><th>% Dif.</th></tr></thead>
+    <tbody>{% for d in data %}
+    <tr><td><strong>{{ d.order }}</strong></td>
+        <td><span class="badge bg-{{ 'success' if d.status=='Cerrada' else 'info' }}">{{ d.status }}</span></td>
+        <td>{{ d.input }}</td><td>{{ d.output }}</td><td>{{ d.waste }}</td>
+        <td>{{ d.diff }}</td>
+        <td><span class="badge bg-{{ 'danger' if d.pct|abs > 5 else 'success' }}">{{ d.pct }}%</span></td></tr>
+    {% endfor %}</tbody>
+</table></div></div>
+{% endblock %}

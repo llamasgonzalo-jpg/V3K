@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Trazabilidad{% endblock %} | Sistema Res.709</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+{% if current_user.is_authenticated %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+    <div class="container-fluid">
+        <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url_for('main.dashboard') }}">
+            <img src="{{ url_for('static', filename='img/v3k-logo.png') }}"
+                 alt="V3K" style="height:36px; width:auto;">
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navMain">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                        <i class="bi bi-gear"></i> Admin
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('admin.users') }}">Usuarios</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('admin.roles') }}">Roles y permisos</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{{ url_for('admin.units') }}">Unidades de medida</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('admin.statuses') }}">Estados</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('admin.event_types') }}">Tipos de evento</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('admin.wastage_reasons') }}">Motivos de merma</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('admin.quality_categories') }}">Calidades</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('admin.suppliers') }}">Proveedores</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{{ url_for('admin.coding_rules') }}">Reglas de codificación</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('admin.tolerances') }}">Tolerancias</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('admin.rigor_rules') }}">Rigurosidad</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('admin.label_templates') }}">Plantillas etiqueta</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('admin.retention') }}">Retención</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{{ url_for('admin.audit_log') }}">Log de auditoría</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                        <i class="bi bi-building"></i> Maestros
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('master.sites') }}">Predios</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('master.campaigns') }}">Campañas</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('master.genetics') }}">Genéticas</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('master.flowering_groups') }}">Grupos de Floración</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('master.mother_plants') }}">Plantas madre</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('master.water_sources') }}">Fuentes de agua</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('master.warehouses') }}">Depósitos</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                        <i class="bi bi-flower1"></i> Cultivo
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('cultivation.culs') }}">CUL (Lotes)</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('cultivation.receptions') }}">Recepción material</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('cultivation.cultivation_plans') }}">Planes de cultivo</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('cultivation.rpcci_notifications') }}">Notificaciones RPCCI</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('cultivation.spig_list') }}">SPIG-BCP</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('cultivation.access_log') }}">Bitácora accesos</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                        <i class="bi bi-box-seam"></i> Inventario
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('inventory.supplies') }}">Insumos</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('inventory.receptions') }}">Recepciones</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('inventory.stock') }}">Stock</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('inventory.adjustments') }}">Ajustes</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                        <i class="bi bi-scissors"></i> Cosecha
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('harvest.plans') }}">Planes cosecha</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('harvest.batches') }}">Batches</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('harvest.containers') }}">Contenedores</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('harvest.physical_inventory') }}">Inventario físico</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                        <i class="bi bi-moisture"></i> Proceso
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('processing.orders') }}">Órdenes de proceso</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('processing.products') }}">Productos</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                        <i class="bi bi-clipboard-check"></i> Calidad
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('quality.sampling_plans') }}">Planes de muestreo</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('quality.samples') }}">Muestras</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('quality.non_conformities') }}">No conformidades</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('quality.release_gate') }}">Liberación</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                        <i class="bi bi-truck"></i> Despacho
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('dispatch.orders') }}">Órdenes</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('patients.patient_list') }}">
+                        <i class="bi bi-people"></i> Pacientes
+                    </a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                        <i class="bi bi-graph-up"></i> Reportes
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('reports.index') }}">Panel de reportes</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('reports.traceability') }}">Trazabilidad completa</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('reports.yield_report') }}">Rendimientos</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('reports.campaign_report') }}">Por campaña</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('reports.mass_balance') }}">Balance de masa</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('reports.stock_dashboard') }}">Stock por estado</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('reports.audit_report') }}">Auditoría por CUL</a></li>
+                    </ul>
+                </li>
+            </ul>
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link position-relative" href="{{ url_for('main.notifications_list') }}">
+                        <i class="bi bi-bell"></i>
+                        {% if unread_notifications > 0 %}
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">{{ unread_notifications }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                        <i class="bi bi-person-circle"></i> {{ current_user.username }}
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">Mi perfil</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Cerrar sesión</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+<div class="container-fluid" style="margin-top: 70px; padding: 20px;">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+</div>
+{% else %}
+<div class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }} alert-dismissible fade show mt-3" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+    {% block public_content %}{% endblock %}
+</div>
+{% endif %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

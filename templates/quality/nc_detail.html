@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}NC {{ nc.code }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="section-title mb-0"><i class="bi bi-exclamation-triangle"></i> {{ nc.code or 'No Conformidad' }}</h4>
+    <div><a href="{{ url_for('quality.non_conformities') }}" class="btn btn-outline-secondary btn-sm">Volver</a>
+    {% if nc.status != 'Cerrada' %}<form method="POST" action="{{ url_for('quality.nc_close', id=nc.id) }}" class="d-inline"><button class="btn btn-outline-success btn-sm" data-confirm="¿Cerrar NC?">Cerrar NC</button></form>{% endif %}</div>
+</div>
+<div class="card mb-3"><div class="card-body">
+    <div class="row">
+        <div class="col-md-3"><small class="text-muted">Estado</small><br><span class="badge bg-{{ 'success' if nc.status=='Cerrada' else 'primary' if nc.status=='En tratamiento' else 'secondary' }}">{{ nc.status }}</span></div>
+        <div class="col-md-2"><small class="text-muted">Severidad</small><br><span class="badge bg-{{ 'danger' if nc.severity=='critica' else 'warning' if nc.severity=='mayor' else 'info' }}">{{ nc.severity }}</span></div>
+        <div class="col-md-3"><small class="text-muted">Entidad</small><br>{{ nc.entity_type }} #{{ nc.entity_id or '-' }}</div>
+        <div class="col-md-4"><small class="text-muted">Fecha creación</small><br>{{ nc.created_at.strftime('%d/%m/%Y %H:%M') if nc.created_at else '' }}</div>
+    </div>
+    <div class="mt-2"><small class="text-muted">Descripción</small><br>{{ nc.description }}</div>
+</div></div>
+<div class="card mb-3"><div class="card-header">Acciones Correctivas / Preventivas (CAPA)</div><div class="card-body p-0">
+<table class="table table-sm mb-0">
+    <thead><tr><th>Acción</th><th>Responsable</th><th>Fecha límite</th><th>Estado</th><th></th></tr></thead>
+    <tbody>{% for c in capas %}
+    <tr><td>{{ c.action }}</td>
+        <td>{{ c.responsible.username if c.responsible else '-' }}</td>
+        <td>{{ c.due_date.strftime('%d/%m/%Y') if c.due_date else '-' }}</td>
+        <td><span class="badge bg-{{ 'success' if c.status=='Completada' else 'warning' }}">{{ c.status }}</span></td>
+        <td>{% if c.status == 'Pendiente' %}
+            <form method="POST" action="{{ url_for('quality.capa_complete', id=c.id) }}" class="d-inline">
+                <input type="hidden" name="evidence" value="Completada manualmente">
+                <button class="btn btn-outline-success btn-sm">Completar</button>
+            </form>{% endif %}</td></tr>
+    {% endfor %}</tbody>
+</table></div></div>
+{% if nc.status != 'Cerrada' %}
+<div class="card"><div class="card-header">Agregar Acción</div><div class="card-body">
+<form method="POST" action="{{ url_for('quality.capa_create') }}">
+    <input type="hidden" name="nc_id" value="{{ nc.id }}">
+    <div class="row g-2">
+        <div class="col-md-5"><label>Acción *</label><input type="text" name="action" class="form-control" required></div>
+        <div class="col-md-3"><label>Responsable ID</label><input type="number" name="responsible_id" class="form-control"></div>
+        <div class="col-md-3"><label>Fecha límite</label><input type="date" name="due_date" class="form-control"></div>
+        <div class="col-md-1 d-flex align-items-end"><button type="submit" class="btn btn-success">+</button></div>
+    </div>
+</form></div></div>
+{% endif %}
+{% endblock %}

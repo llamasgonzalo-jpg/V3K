@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Rigurosidad{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="section-title mb-0"><i class="bi bi-shield-check"></i> Reglas de Rigurosidad</h4>
+    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#newModal">+ Nueva</button>
+</div>
+<div class="card"><div class="card-body p-0">
+<table class="table table-hover mb-0">
+    <thead><tr><th>Actividad</th><th>Quimiotipo</th><th>Nivel</th><th>Modo Tracking</th><th>Frecuencia Reportes</th><th></th></tr></thead>
+    <tbody>
+    {% for r in items %}
+    <tr><td><span class="badge bg-dark">{{ r.activity }}</span></td><td>{{ r.chemotype or '-' }}</td><td><span class="badge bg-{{ 'danger' if r.rigor_level=='alta' else 'warning' if r.rigor_level=='media' else 'info' }}">{{ r.rigor_level }}</span></td><td>{{ r.tracking_mode or '-' }}</td><td>{{ r.report_frequency or '-' }}</td>
+        <td><button class="btn btn-outline-primary btn-action" data-bs-toggle="modal" data-bs-target="#edit{{ r.id }}">Editar</button></td></tr>
+    <div class="modal fade" id="edit{{ r.id }}"><div class="modal-dialog"><div class="modal-content">
+        <form method="POST"><input type="hidden" name="item_id" value="{{ r.id }}">
+        <div class="modal-header"><h5>Editar Regla</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <div class="mb-2"><label>Actividad</label><select name="activity" class="form-select">{% for a in ['H','Bio','A','E','K','N'] %}<option {{ 'selected' if r.activity==a }}>{{ a }}</option>{% endfor %}</select></div>
+            <div class="mb-2"><label>Quimiotipo</label><select name="chemotype" class="form-select"><option value="">--</option>{% for q in ['Q1','Q2','Q3','Q4','Q5'] %}<option {{ 'selected' if r.chemotype==q }}>{{ q }}</option>{% endfor %}</select></div>
+            <div class="mb-2"><label>Nivel</label><select name="rigor_level" class="form-select">{% for l in ['alta','media','documental','basica'] %}<option {{ 'selected' if r.rigor_level==l }}>{{ l }}</option>{% endfor %}</select></div>
+            <div class="mb-2"><label>Modo tracking</label><select name="tracking_mode" class="form-select"><option value="por_unidad" {{ 'selected' if r.tracking_mode=='por_unidad' }}>Por unidad/planta</option><option value="por_batch" {{ 'selected' if r.tracking_mode=='por_batch' }}>Por batch/lote</option></select></div>
+            <div class="mb-2"><label>Frecuencia reportes</label><input type="text" name="report_frequency" class="form-control" value="{{ r.report_frequency or '' }}"></div>
+        </div>
+        <div class="modal-footer"><button type="submit" class="btn btn-success">Guardar</button></div></form>
+    </div></div></div>
+    {% endfor %}
+    </tbody>
+</table></div></div>
+<div class="modal fade" id="newModal"><div class="modal-dialog"><div class="modal-content">
+    <form method="POST"><div class="modal-header"><h5>Nueva Regla</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <div class="mb-2"><label>Actividad *</label><select name="activity" class="form-select">{% for a in ['H','Bio','A','E','K','N'] %}<option>{{ a }}</option>{% endfor %}</select></div>
+        <div class="mb-2"><label>Quimiotipo</label><select name="chemotype" class="form-select"><option value="">--</option>{% for q in ['Q1','Q2','Q3','Q4','Q5'] %}<option>{{ q }}</option>{% endfor %}</select></div>
+        <div class="mb-2"><label>Nivel *</label><select name="rigor_level" class="form-select">{% for l in ['alta','media','documental','basica'] %}<option>{{ l }}</option>{% endfor %}</select></div>
+        <div class="mb-2"><label>Modo tracking</label><select name="tracking_mode" class="form-select"><option value="por_unidad">Por unidad/planta</option><option value="por_batch">Por batch/lote</option></select></div>
+        <div class="mb-2"><label>Frecuencia reportes</label><input type="text" name="report_frequency" class="form-control"></div>
+    </div>
+    <div class="modal-footer"><button type="submit" class="btn btn-success">Crear</button></div></form>
+</div></div></div>
+{% endblock %}

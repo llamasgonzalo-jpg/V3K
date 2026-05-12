@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+{% block title %}CUL {{ cul.code }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="section-title mb-0"><i class="bi bi-flower1"></i> CUL: {{ cul.code }}</h4>
+    <div>
+        <a href="{{ url_for('cultivation.culs') }}" class="btn btn-outline-secondary btn-sm">Volver</a>
+        <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editModal">Editar CUL</button>
+        {% if not cul.is_blocked %}<button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#blockModal">Bloquear</button>{% endif %}
+        <form method="POST" action="{{ url_for('cultivation.cul_delete', id=cul.id) }}" class="d-inline">
+            <button class="btn btn-outline-danger btn-sm" data-confirm="⚠️ ¿Eliminar CUL {{ cul.code }}? Esto eliminará todos sus eventos y movimientos asociados.">Eliminar</button>
+        </form>
+
+        <!-- Transición de etapa -->
+        {% if cul.stage == 'VG' %}
+        <form method="POST" action="{{ url_for('cultivation.change_stage', id=cul.id) }}" class="d-inline">
+            <input type="hidden" name="new_stage" value="FL">
+            <button class="btn btn-success btn-sm" data-confirm="¿Iniciar floración?">→ Floración</button>
+        </form>
+        {% elif cul.stage == 'FL' %}
+        <form method="POST" action="{{ url_for('cultivation.change_stage', id=cul.id) }}" class="d-inline">
+            <input type="hidden" name="new_stage" value="PC">
+            <button class="btn btn-success btn-sm" data-confirm="¿Ir a post-cosecha?">→ Post-Cosecha</button>
+        </form>
+        {% elif cul.stage == 'PC' %}
+        <form method="POST" action="{{ url_for('cultivation.change_stage', id=cul.id) }}" class="d-inline">
+            <input type="hidden" name="new_stage" value="DIM">
+            <button class="btn btn-warning btn-sm" data-confirm="¿Dar de baja?">→ Descarte</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Info cards -->
+<div class="row g-3 mb-3">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4"><strong>Estado:</strong> <span class="badge bg-{{ 'success' if cul.status=='Activo' else 'danger' if cul.status=='Bloqueado' else 'secondary' }} ms-1">{{ cul.status }}</span></div>
+                    <div class="col-md-4"><strong>Etapa:</strong> <span class="badge bg-primary ms-1">{{ cul.stage }}</span></div>
+                    <div class="col-md-4"><strong>Quimiotipo:</strong> <span class="badge bg-info ms-1">{{ cul.chemotype or '-' }}</span></div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-md-3"><small class="text-muted">Año</small><br>{{ cul.year }}</div>
+                    <div class="col-md-3"><small class="text-muted">Finalidad</small><br>{{ cul.purpose or '-' }}</div>
+                    <div class="col-md-3"><small class="text-muted">Genética</small><br>{{ cul.genetic.name if cul.genetic else '-' }}</div>
+                    <div class="col-md-3"><small class="text-muted">Plantas</small><br><strong>{{ cul.plant_count }}</strong></div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-md-3"><small class="text-muted">Sitio</small><br>{{ cul.site.name if cul.site else '-' }}</div>
+                    <div class="col-md-3"><small class="text-muted">Sector</small><br>{{ cul.sector.name if cul.sector else '-' }}</div>
+                    <div class="col-md-3"><small class="text-muted">Campaña</small><br>{{ cul.campaign.name if cul.campaign else '-' }}</div>
+                    <div class="col-md-3"><small class="text-muted">GF</small><br>{{ cul.flowering_group.code if cul.flowering_group else '-' }}</div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-md-4"><small class="text-muted">Superficie declarada</small><br>{{ cul.declared_area or '-' }} m²</div>
+                    <div class="col-md-4"><small class="text-muted">RT</small><br>{{ cul.responsible_tech or '-' }}</div>
+                    <div class="col-md-4"><small class="text-muted">Creado</small><br>{{ cul.created_at.strftime('%d/%m/%Y') if cul.created_at else '' }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        {% if blocks %}
+        <div class="card border-danger mb-2">
+            <div class="card-header bg-danger text-white">Bloqueos</div>
+            <div class="card-body p-2">
+            {% for b in blocks %}
+            <div class="mb-2 p-2 bg-light rounded">
+                <span class="badge bg-{{ 'danger' if b.is_active else 'secondary' }}">{{ b.block_type }}</span>
+                <small>{{ b.reason|truncate(80) }}</small>
+                {% if b.is_active %}<form method="POST" action="{{ url_for('cultivation.block_unblock', id=b.id) }}" class="mt-1">
+                    <input type="text" name="documentation" class="form-control form-control-sm mb-1" placeholder="Documentación de levantamiento">
+                    <button class="btn btn-sm btn-outline-success">Levantar</button>
+                </form>{% endif %}
+            </div>
+            {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        {% if deviations %}
+        <div class="card border-warning">
+            <div class="card-header bg-warning">Desvíos</div>
+            <div class="card-body p-2">
+            {% for d in deviations %}
+            <div class="small mb-1">{{ d.metric }}: {{ d.deviation_pct }}% ({{ d.severity }})</div>
+            {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-tabs" role="tablist">
+    <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#timeline">Timeline ({{ events|length }})</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#movements">Movimientos ({{ movements|length }})</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#rpcci">RPCCI ({{ notifications|length }})</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#newEvent">+ Evento</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#newMovement">+ Movimiento</a></li>
+</ul>
+<div class="tab-content mt-3">
+    <!-- Timeline -->
+    <div class="tab-pane fade show active" id="timeline">
+        <div class="timeline">
+        {% for e in events %}
+        <div class="timeline-item event-{{ e.event_category }}">
+            <div class="d-flex justify-content-between">
+                <strong>{{ e.event_category|title }}</strong>
+                <small class="text-muted">{{ e.date.strftime('%d/%m/%Y %H:%M') if e.date else '' }}</small>
+            </div>
+            <p class="mb-0 small">{{ e.description or '' }}
+            {% if e.water_volume %} | Vol: {{ e.water_volume }}{% endif %}
+            {% if e.product_name %} | Producto: {{ e.product_name }}{% endif %}
+            {% if e.temperature %} | T: {{ e.temperature }}°C{% endif %}
+            {% if e.count_actual is not none %} | Conteo: {{ e.count_actual }}/{{ e.count_expected }}{% endif %}
+            </p>
+            {% if e.notes %}<small class="text-muted">{{ e.notes }}</small>{% endif %}
+        </div>
+        {% endfor %}
+        </div>
+    </div>
+    <!-- Movements -->
+    <div class="tab-pane fade" id="movements">
+        <table class="table table-sm">
+            <thead><tr><th>Fecha</th><th>Tipo</th><th>Origen</th><th>Destino</th><th>Responsable</th><th>Notas</th></tr></thead>
+            <tbody>
+            {% for m in movements %}
+            <tr><td>{{ m.date.strftime('%d/%m/%Y %H:%M') if m.date else '' }}</td><td>{{ m.movement_type }}</td>
+                <td>{{ m.origin.name if m.origin else '-' }}</td><td>{{ m.destination.name if m.destination else '-' }}</td>
+                <td>{{ m.responsible.username if m.responsible else '-' }}</td><td class="small">{{ m.notes or '' }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <!-- RPCCI -->
+    <div class="tab-pane fade" id="rpcci">
+        <table class="table table-sm">
+            <thead><tr><th>Tipo</th><th>Ticket</th><th>Estado</th><th>Enviada</th><th>Respuesta</th></tr></thead>
+            <tbody>
+            {% for n in notifications %}
+            <tr><td>{{ n.notification_type }}</td><td>{{ n.ticket_number or '-' }}</td>
+                <td><span class="badge bg-{{ 'success' if n.status=='Aceptada' else 'warning' if n.status=='Enviada' else 'danger' if n.status=='Rechazada' else 'secondary' }}">{{ n.status }}</span></td>
+                <td>{{ n.sent_at.strftime('%d/%m/%Y') if n.sent_at else '-' }}</td>
+                <td>{{ n.response_at.strftime('%d/%m/%Y') if n.response_at else '-' }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <!-- New Event -->
+    <div class="tab-pane fade" id="newEvent">
+        <div class="card"><div class="card-body">
+        <form method="POST" action="{{ url_for('cultivation.event_create') }}">
+            <input type="hidden" name="cul_id" value="{{ cul.id }}">
+            <div class="row g-2">
+                <div class="col-md-3"><label>Categoría *</label><select name="event_category" class="form-select" id="evtCat">
+                    {% for c in ['propagacion','trasplante','riego','nutricion','aplicacion','manejo','scouting','ambiente','clima','conteo','acceso'] %}
+                    <option>{{ c }}</option>{% endfor %}</select></div>
+                <div class="col-md-3"><label>Tipo evento</label><select name="event_type_id" class="form-select"><option value="">--</option>{% for et in event_types %}<option value="{{ et.id }}">{{ et.name }}</option>{% endfor %}</select></div>
+                <div class="col-md-3"><label>Fecha/hora *</label><input type="datetime-local" name="date" class="form-control" required></div>
+                <div class="col-md-3"><label>Sector</label><select name="sector_id" class="form-select"><option value="">--</option>{% for s in sectors %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select></div>
+            </div>
+            <div class="row g-2 mt-1">
+                <div class="col-md-6"><label>Descripción</label><textarea name="description" class="form-control" rows="2"></textarea></div>
+                <div class="col-md-6"><label>Notas</label><textarea name="notes" class="form-control" rows="2"></textarea></div>
+            </div>
+            <div class="row g-2 mt-1">
+                <div class="col-md-2"><label>Vol. agua</label><input type="number" step="any" name="water_volume" class="form-control"></div>
+                <div class="col-md-2"><label>Fuente agua</label><input type="text" name="water_source" class="form-control"></div>
+                <div class="col-md-2"><label>Producto</label><input type="text" name="product_name" class="form-control"></div>
+                <div class="col-md-2"><label>Dosis</label><input type="text" name="dose" class="form-control"></div>
+                <div class="col-md-2"><label>Temp °C</label><input type="number" step="0.1" name="temperature" class="form-control"></div>
+                <div class="col-md-2"><label>HR %</label><input type="number" step="0.1" name="humidity" class="form-control"></div>
+            </div>
+            <div class="row g-2 mt-1">
+                <div class="col-md-3"><label>Conteo esperado</label><input type="number" name="count_expected" class="form-control"></div>
+                <div class="col-md-3"><label>Conteo real</label><input type="number" name="count_actual" class="form-control"></div>
+                <div class="col-md-6"><label>Motivo diferencia</label><input type="text" name="count_difference_reason" class="form-control"></div>
+            </div>
+            <div class="row g-2 mt-1">
+                <div class="col-md-4"><label>Receta</label><input type="text" name="recipe_name" class="form-control"></div>
+                <div class="col-md-4"><label>Severidad</label><select name="severity" class="form-select"><option value="">--</option><option>baja</option><option>media</option><option>alta</option><option>critica</option></select></div>
+                <div class="col-md-4"><label>Hallazgos</label><input type="text" name="findings" class="form-control"></div>
+            </div>
+            <button type="submit" class="btn btn-success mt-3">Registrar Evento</button>
+        </form>
+        </div></div>
+    </div>
+    <!-- New Movement -->
+    <div class="tab-pane fade" id="newMovement">
+        <div class="card"><div class="card-body">
+        <form method="POST" action="{{ url_for('cultivation.movement_create') }}">
+            <input type="hidden" name="cul_id" value="{{ cul.id }}">
+            <div class="row g-2">
+                <div class="col-md-3"><label>Fecha *</label><input type="datetime-local" name="date" class="form-control" required></div>
+                <div class="col-md-3"><label>Tipo</label><select name="movement_type" class="form-select"><option>interno</option><option>secado</option><option>curado</option><option>despacho</option></select></div>
+                <div class="col-md-3"><label>Origen</label><select name="origin_sector_id" class="form-select"><option value="">--</option>{% for s in sectors %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select></div>
+                <div class="col-md-3"><label>Destino</label><select name="destination_sector_id" class="form-select"><option value="">--</option>{% for s in sectors %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select></div>
+            </div>
+            <div class="row g-2 mt-1">
+                <div class="col-md-6"><label>RT</label><input type="text" name="responsible_tech" class="form-control"></div>
+                <div class="col-md-6"><label>Notas</label><input type="text" name="notes" class="form-control"></div>
+            </div>
+            <button type="submit" class="btn btn-success mt-3">Registrar Movimiento</button>
+        </form>
+        </div></div>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="editModal"><div class="modal-dialog"><div class="modal-content">
+    <form method="POST" action="{{ url_for('cultivation.cul_edit', id=cul.id) }}">
+    <div class="modal-header"><h5>Editar CUL</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <div class="mb-2"><label>Etapa (usar botones de transición)</label><input type="text" class="form-control" value="{{ cul.stage }}" disabled></div>
+        <div class="mb-2"><label>Estado</label><select name="status" class="form-select">{% for s in ['Activo','Bloqueado','Cerrado'] %}<option {{ 'selected' if cul.status==s }}>{{ s }}</option>{% endfor %}</select></div>
+        <div class="mb-2"><label>Plantas</label><input type="number" name="plant_count" class="form-control" value="{{ cul.plant_count }}"></div>
+        <div class="mb-2"><label>RT</label><input type="text" name="responsible_tech" class="form-control" value="{{ cul.responsible_tech or '' }}"></div>
+    </div>
+    <div class="modal-footer"><button type="submit" class="btn btn-success">Guardar</button></div>
+    </form>
+</div></div></div>
+
+<!-- Block Modal -->
+<div class="modal fade" id="blockModal"><div class="modal-dialog"><div class="modal-content">
+    <form method="POST" action="{{ url_for('cultivation.block_create') }}">
+    <input type="hidden" name="cul_id" value="{{ cul.id }}">
+    <div class="modal-header"><h5 class="text-danger">Bloquear CUL</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <div class="mb-2"><label>Tipo de bloqueo</label><select name="block_type" class="form-select"><option>preventivo</option><option>temporal</option><option>definitivo</option></select></div>
+        <div class="mb-2"><label>Motivo *</label><textarea name="reason" class="form-control" rows="3" required></textarea></div>
+        <div class="form-check"><input type="checkbox" name="extend_to_gf" class="form-check-input"><label class="form-check-label">Extender bloqueo al Grupo de Floración</label></div>
+    </div>
+    <div class="modal-footer"><button type="submit" class="btn btn-danger">Bloquear</button></div>
+    </form>
+</div></div></div>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Catálogo{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="section-title mb-0"><i class="bi bi-list-ul"></i> Catálogo</h4>
+    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#itemModal">+ Nuevo</button>
+</div>
+<div class="card"><div class="card-body p-0">
+<table class="table table-hover mb-0">
+    <thead><tr><th>#</th><th>Nombre</th><th>Estado</th><th></th></tr></thead>
+    <tbody>
+    {% for item in items %}
+    <tr>
+        <td>{{ item.id }}</td>
+        <td>{{ item.name }}</td>
+        <td>{% if item.is_active is not none %}{{ 'Activo' if item.is_active else 'Inactivo' }}{% else %}-{% endif %}</td>
+        <td><button class="btn btn-outline-primary btn-action" data-bs-toggle="modal" data-bs-target="#edit{{ item.id }}">Editar</button></td>
+    </tr>
+    <div class="modal fade" id="edit{{ item.id }}"><div class="modal-dialog"><div class="modal-content">
+        <form method="POST"><input type="hidden" name="item_id" value="{{ item.id }}">
+        <div class="modal-header"><h5>Editar</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <div class="mb-2"><label class="form-label">Nombre</label><input type="text" name="name" class="form-control" value="{{ item.name }}" required></div>
+            {% if item.abbreviation is defined %}<div class="mb-2"><label class="form-label">Abreviatura</label><input type="text" name="abbreviation" class="form-control" value="{{ item.abbreviation or '' }}"></div>{% endif %}
+            {% if item.category is defined %}<div class="mb-2"><label class="form-label">Categoría</label><input type="text" name="category" class="form-control" value="{{ item.category or '' }}"></div>{% endif %}
+            {% if item.stage is defined %}<div class="mb-2"><label class="form-label">Etapa</label><input type="text" name="stage" class="form-control" value="{{ item.stage or '' }}"></div>{% endif %}
+            {% if item.description is defined %}<div class="mb-2"><label class="form-label">Descripción</label><input type="text" name="description" class="form-control" value="{{ item.description or '' }}"></div>{% endif %}
+        </div>
+        <div class="modal-footer"><button type="submit" class="btn btn-success">Guardar</button></div>
+        </form>
+    </div></div></div>
+    {% endfor %}
+    </tbody>
+</table>
+</div></div>
+<div class="modal fade" id="itemModal"><div class="modal-dialog"><div class="modal-content">
+    <form method="POST">
+    <div class="modal-header"><h5>Nuevo Item</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <div class="mb-2"><label class="form-label">Nombre *</label><input type="text" name="name" class="form-control" required></div>
+    </div>
+    <div class="modal-footer"><button type="submit" class="btn btn-success">Crear</button></div>
+    </form>
+</div></div></div>
+{% endblock %}

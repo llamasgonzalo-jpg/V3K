@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Plantas Madre{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="section-title mb-0"><i class="bi bi-tree"></i> Plantas Madre / Banco</h4>
+    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#newModal">+ Nueva</button>
+</div>
+<div class="card"><div class="card-body p-0">
+<table class="table table-hover mb-0">
+    <thead><tr><th>Código</th><th>Genética</th><th>Sitio</th><th>Estado</th><th>Notas</th><th></th></tr></thead>
+    <tbody>
+    {% for p in plants %}
+    <tr><td><strong>{{ p.code }}</strong></td><td>{{ p.genetic.name if p.genetic else '-' }}</td><td>{{ p.site.name if p.site else '-' }}</td><td>{{ p.status }}</td><td class="small">{{ p.notes|truncate(50) if p.notes else '-' }}</td>
+        <td><button class="btn btn-outline-primary btn-action" data-bs-toggle="modal" data-bs-target="#edit{{ p.id }}">Editar</button></td></tr>
+    <div class="modal fade" id="edit{{ p.id }}"><div class="modal-dialog"><div class="modal-content">
+        <form method="POST" action="{{ url_for('master.mother_plant_save') }}"><input type="hidden" name="plant_id" value="{{ p.id }}">
+        <div class="modal-header"><h5>Editar</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <div class="mb-2"><label>Código *</label><input type="text" name="code" class="form-control" value="{{ p.code }}" required></div>
+            <div class="mb-2"><label>Genética</label><select name="genetic_id" class="form-select"><option value="">--</option>{% for g in genetics %}<option value="{{ g.id }}" {{ 'selected' if p.genetic_id==g.id }}>{{ g.name }}</option>{% endfor %}</select></div>
+            <div class="mb-2"><label>Sitio</label><select name="site_id" class="form-select"><option value="">--</option>{% for s in sites %}<option value="{{ s.id }}" {{ 'selected' if p.site_id==s.id }}>{{ s.name }}</option>{% endfor %}</select></div>
+            <div class="mb-2"><label>Notas</label><textarea name="notes" class="form-control" rows="2">{{ p.notes or '' }}</textarea></div>
+        </div>
+        <div class="modal-footer"><button type="submit" class="btn btn-success">Guardar</button></div></form>
+    </div></div></div>
+    {% endfor %}
+    </tbody>
+</table></div></div>
+<div class="modal fade" id="newModal"><div class="modal-dialog"><div class="modal-content">
+    <form method="POST" action="{{ url_for('master.mother_plant_save') }}">
+    <div class="modal-header"><h5>Nueva Planta Madre</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <div class="mb-2"><label>Código *</label><input type="text" name="code" class="form-control" required></div>
+        <div class="mb-2"><label>Genética</label><select name="genetic_id" class="form-select"><option value="">--</option>{% for g in genetics %}<option value="{{ g.id }}">{{ g.name }}</option>{% endfor %}</select></div>
+        <div class="mb-2"><label>Sitio</label><select name="site_id" class="form-select"><option value="">--</option>{% for s in sites %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select></div>
+        <div class="mb-2"><label>Notas</label><textarea name="notes" class="form-control" rows="2"></textarea></div>
+    </div>
+    <div class="modal-footer"><button type="submit" class="btn btn-success">Crear</button></div></form>
+</div></div></div>
+{% endblock %}

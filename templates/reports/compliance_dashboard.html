@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+{% block title %}Dashboard de Cumplimiento Normativo{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/compliance-dashboard.css') }}">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+{% endblock %}
+{% block content %}
+
+<!-- HEADER -->
+<div class="compliance-header">
+    <div class="header-content">
+        <div>
+            <h2><i class="bi bi-shield-check"></i> Dashboard de Cumplimiento Normativo</h2>
+            <small class="text-muted">RES-709 | Actualizado: {{ data.timestamp[:10] }} {{ data.timestamp[11:16] }} UTC</small>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-outline-light btn-sm"><i class="bi bi-download"></i> Exportar</button>
+            <button class="btn btn-outline-light btn-sm"><i class="bi bi-gear"></i> Filtros</button>
+        </div>
+    </div>
+</div>
+
+<!-- KPI GLOBAL -->
+<div class="kpi-global">
+    <div class="kpi-card compliance-status">
+        <div class="kpi-value">{{ data.compliance.global_pct }}%</div>
+        <div class="kpi-label">Cumplimiento Global</div>
+        <div class="semaforo-box">
+            <span class="semaforo semaforo-{{ data.compliance.status }}"></span>
+            <span class="semaforo-label">
+                {% if data.compliance.status == 'green' %}
+                    CUMPLIMIENTO COMPLETO
+                {% elif data.compliance.status == 'yellow' %}
+                    TAREAS PENDIENTES
+                {% else %}
+                    INCUMPLIMIENTOS
+                {% endif %}
+            </span>
+        </div>
+    </div>
+
+    <div class="kpi-card alert-card">
+        <div class="kpi-value alert-count-{{ data.alerts.severity }}">{{ data.alerts.total }}</div>
+        <div class="kpi-label">Alertas Regulatorias Activas</div>
+        <div class="alert-items">
+            {% if data.alerts.culs_blocked > 0 %}<small>🔴 {{ data.alerts.culs_blocked }} CUL bloqueado(s)</small>{% endif %}
+            {% if data.alerts.samples_non_conforming > 0 %}<small>⚠️ {{ data.alerts.samples_non_conforming }} muestra(s) NC</small>{% endif %}
+            {% if data.alerts.spig_expired > 0 %}<small>📋 {{ data.alerts.spig_expired }} SPIG vencido(s)</small>{% endif %}
+        </div>
+    </div>
+
+    <div class="kpi-card pending-card">
+        <div class="kpi-value">{{ data.pending.events_without_notes + data.pending.batches_unclassified + data.pending.samples_pending }}</div>
+        <div class="kpi-label">Eventos sin Registrar</div>
+        <div class="pending-items">
+            <small>{{ data.pending.events_without_notes }} eventos sin notas</small>
+            <small>{{ data.pending.batches_unclassified }} batches sin clasificar</small>
+        </div>
+    </div>
+
+    <div class="kpi-card inconsistency-card">
+        <div class="kpi-value">{{ data.inconsistencies.culs_no_batch + data.inconsistencies.batches_no_destination }}</div>
+        <div class="kpi-label">Inconsistencias Detectadas</div>
+        <div class="inconsistency-items">
+            <small>{{ data.inconsistencies.culs_no_batch }} CUL sin lote</small>
+            <small>{{ data.inconsistencies.batches_no_destination }} lotes sin destino</small>
+        </div>
+    </div>
+</div>
+
+<!-- BARRA DE ETAPAS -->
+<div class="stages-bar-container">
+    <div class="stages-header">
+        <h5>Progreso por Etapa Productiva</h5>
+    </div>
+    <div class="stages-bar">
+        {% set stage_names = {
+            'genetica': 'Genética',
+            'plantines': 'Plantines',
+            'cultivo_vg': 'Cultivo VG',
+            'floracion_fl': 'Floración',
+            'cosecha': 'Cosecha',
+            'secado': 'Secado',
+            'almacenamiento': 'Almacén',
+            'transporte': 'Transporte'
+        } %}
+        {% for stage_key, stage_data in data.stages.items() %}
+        <div class="stage-segment stage-{{ stage_data.status }}" style="flex: 1;" title="{{ stage_names.get(stage_key, stage_key) }}: {{ stage_data.pct }}%">
+            <div class="segment-label">{{ stage_names.get(stage_key, stage_key) }}</div>
+            <div class="segment-pct">{{ stage_data.pct }}%</div>
+            <div class="segment-bar" style="width: {{ stage_data.pct }}%"></div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- GRID DE PANELES -->
+<div class="panels-grid">
+    <!-- Panel 1: Inventario Vivo -->
+    <div class="panel panel-inventory">
+        <div class="panel-header">
+            <h5><i class="bi bi-box"></i> Inventario Vivo</h5>
+        </div>
+        <div class="panel-body">
+            <div class="inventory-item">
+                <span class="inventory-label">🌱 Plantas Activas</span>
+                <span class="inventory-value">{{ data.inventory.active_plants | int }}</span>
+            </div>
+            <div class="inventory-item">
+                <span class="inventory-label">🌿 Plantines</span>
+                <span class="inventory-value">{{ data.inventory.seedlings }}</span>
+            </div>
+            <div class="inventory-item">
+                <span class="inventory-label">📦 Lotes en Cultivo</span>
+                <span class="inventory-value">{{ data.inventory.lots_cultivation }}</span>
+            </div>
+            <div class="inventory-item">
+                <span class="inventory-label">✂️ Lotes Cosechados</span>
+                <span class="inventory-value">{{ data.inventory.lots_harvested }}</span>
+            </div>
+            <div class="inventory-item highlight">
+                <span class="inventory-label">📊 Biomasa Almacenada</span>
+                <span class="inventory-value">{{ (data.inventory.biomass_kg | float) | round(1) }} kg</span>
+            </div>
+            <div class="inventory-item">
+                <span class="inventory-label">🔴 Material Destruido</span>
+                <span class="inventory-value">{{ (data.inventory.material_destroyed_kg | float) | round(1) }} kg</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel 2: Eventos Recientes -->
+    <div class="panel panel-timeline">
+        <div class="panel-header">
+            <h5><i class="bi bi-clock-history"></i> Movimientos Recientes</h5>
+        </div>
+        <div class="panel-body timeline-compact">
+            {% for event in data.timeline[:10] %}
+            <div class="timeline-item timeline-{{ event.type }}">
+                <div class="timeline-marker"></div>
+                <div class="timeline-content">
+                    {% if event.type == 'harvest' %}
+                        <strong>Cosecha: {{ event.code }}</strong> ({{ event.weight }} kg)
+                    {% elif event.type == 'dispatch' %}
+                        <strong>Despacho: {{ event.code }}</strong> → {{ event.recipient }}
+                    {% endif %}
+                    <small class="timeline-time">{{ event.timestamp[:10] }}</small>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Panel 3: Trazabilidad Documental -->
+    <div class="panel panel-documentation">
+        <div class="panel-header">
+            <h5><i class="bi bi-file-text"></i> Carga Documental</h5>
+        </div>
+        <div class="panel-body">
+            <div class="doc-item">
+                <div class="doc-label">Informes Técnicos</div>
+                <div class="doc-bar"><div class="doc-fill" style="width: 85%"></div></div>
+                <small>85%</small>
+            </div>
+            <div class="doc-item">
+                <div class="doc-label">Registros RT</div>
+                <div class="doc-bar"><div class="doc-fill" style="width: 92%"></div></div>
+                <small>92%</small>
+            </div>
+            <div class="doc-item">
+                <div class="doc-label">Movimientos Documentados</div>
+                <div class="doc-bar"><div class="doc-fill" style="width: 78%"></div></div>
+                <small>78%</small>
+            </div>
+            <div class="doc-item">
+                <div class="doc-label">Protocolos de Lotes</div>
+                <div class="doc-bar"><div class="doc-fill" style="width: 88%"></div></div>
+                <small>88%</small>
+            </div>
+            <div class="doc-summary">
+                <strong>Completitud Documental: 85.75%</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel 4: Auditoría Técnica -->
+    <div class="panel panel-audit">
+        <div class="panel-header">
+            <h5><i class="bi bi-exclamation-triangle"></i> Auditoría Técnica</h5>
+        </div>
+        <div class="panel-body audit-alerts">
+            {% for alert in data.audit_alerts %}
+            <div class="audit-alert alert-{{ alert.severity }}">
+                <div class="alert-header">
+                    <span class="severity-badge badge badge-{{ alert.severity }}">{{ alert.severity | upper }}</span>
+                    <span class="alert-category">{{ alert.category }}</span>
+                </div>
+                <div class="alert-issue">{{ alert.issue }}</div>
+                <div class="alert-count">{{ alert.count }} incidencia(s) | {{ alert.action }}</div>
+            </div>
+            {% endfor %}
+            {% if not data.audit_alerts %}
+            <div class="no-alerts">
+                <span class="badge bg-success">✓</span> Sin alertas críticas
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- PANEL PREDICTIVO -->
+<div class="panel panel-predictive">
+    <div class="panel-header">
+        <h5><i class="bi bi-graph-up"></i> Proyección de Stock</h5>
+    </div>
+    <div class="panel-body">
+        <canvas id="predictiveChart" height="80"></canvas>
+    </div>
+</div>
+
+<script>
+// Gráfico predictivo simple
+const ctx = document.getElementById('predictiveChart').getContext('2d');
+const months = ['Mes 1', 'Mes 2', 'Mes 3', 'Mes 4'];
+const projected = [150, 180, 165, 190];
+const min = [113, 135, 124, 143];
+const max = [188, 225, 206, 238];
+
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: months,
+        datasets: [
+            {
+                label: 'Proyectado',
+                data: projected,
+                borderColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true,
+                pointRadius: 5,
+                pointBackgroundColor: '#10b981',
+            },
+            {
+                label: 'Rango ±25%',
+                data: max,
+                borderColor: 'rgba(16, 185, 129, 0.2)',
+                borderWidth: 1,
+                borderDash: [5, 5],
+                fill: false,
+                pointRadius: 0,
+            },
+            {
+                label: 'Rango ±25%',
+                data: min,
+                borderColor: 'rgba(16, 185, 129, 0.2)',
+                borderWidth: 1,
+                borderDash: [5, 5],
+                fill: '-1',
+                backgroundColor: 'rgba(16, 185, 129, 0.05)',
+                pointRadius: 0,
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                labels: { color: '#f1f5f9', font: { size: 12 } }
+            },
+            filler: { propagate: true }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 300,
+                ticks: { color: '#cbd5e1', font: { size: 12 } },
+                grid: { color: 'rgba(203, 213, 225, 0.1)' }
+            },
+            x: {
+                ticks: { color: '#cbd5e1', font: { size: 12 } },
+                grid: { color: 'rgba(203, 213, 225, 0.1)' }
+            }
+        }
+    }
+});
+</script>
+
+{% endblock %}

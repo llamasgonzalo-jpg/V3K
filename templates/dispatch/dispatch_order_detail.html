@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Despacho {{ order.code }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="section-title mb-0"><i class="bi bi-truck"></i> Despacho: {{ order.code }}</h4>
+    <div><a href="{{ url_for('dispatch.orders') }}" class="btn btn-outline-secondary btn-sm">Volver</a>
+    {% if order.status == 'Preparando' %}<form method="POST" action="{{ url_for('dispatch.do_dispatch', id=order.id) }}" class="d-inline"><button class="btn btn-outline-primary btn-sm" data-confirm="¿Confirmar despacho?">Despachar</button></form>{% endif %}
+    {% if order.status == 'Despachada' %}<button class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#receptionModal">Confirmar Recepción</button>{% endif %}</div>
+</div>
+<div class="card mb-3"><div class="card-body">
+    <div class="row">
+        <div class="col-md-3"><small class="text-muted">Estado</small><br><span class="badge bg-{{ 'success' if order.status=='Recibida' else 'primary' if order.status=='Despachada' else 'secondary' }}">{{ order.status }}</span></div>
+        <div class="col-md-3"><small class="text-muted">Destinatario</small><br>{{ order.recipient }}</div>
+        <div class="col-md-3"><small class="text-muted">Dirección</small><br>{{ order.recipient_address or '-' }}</div>
+        <div class="col-md-3"><small class="text-muted">Fecha</small><br>{{ order.created_at.strftime('%d/%m/%Y') if order.created_at else '' }}</div>
+    </div>
+    {% if order.notes %}<div class="mt-2"><small class="text-muted">Notas</small><br>{{ order.notes }}</div>{% endif %}
+</div></div>
+<div class="card mb-3"><div class="card-header">Ítems</div><div class="card-body p-0">
+<table class="table table-sm mb-0">
+    <thead><tr><th>Batch</th><th>Contenedor</th><th>Cantidad</th></tr></thead>
+    <tbody>{% for i in items %}
+    <tr><td>{{ i.batch.code if i.batch else '-' }}</td>
+        <td>{{ i.container.code if i.container else '-' }}</td>
+        <td>{{ i.quantity or '-' }}</td></tr>
+    {% endfor %}</tbody>
+</table>
+{% if order.status == 'Preparando' %}
+<div class="p-2"><form method="POST" action="{{ url_for('dispatch.add_item', id=order.id) }}" class="row g-1">
+    <div class="col-4"><select name="batch_id" class="form-select form-select-sm" required><option value="">Batch</option>{% for b in batches %}<option value="{{ b.id }}">{{ b.code }} ({{ b.current_weight }}kg)</option>{% endfor %}</select></div>
+    <div class="col-3"><select name="container_id" class="form-select form-select-sm"><option value="">Contenedor</option>{% for c in containers %}<option value="{{ c.id }}">{{ c.code }}</option>{% endfor %}</select></div>
+    <div class="col-2"><input type="number" step="any" name="quantity" class="form-control form-control-sm" placeholder="Cant." required></div>
+    <div class="col-1"><select name="unit_id" class="form-select form-select-sm"><option value="">--</option>{% for u in units %}<option value="{{ u.id }}">{{ u.abbreviation }}</option>{% endfor %}</select></div>
+    <div class="col-2"><button class="btn btn-sm btn-primary w-100">+ Agregar</button></div>
+</form></div>{% endif %}
+</div></div>
+{% if order.status == 'Despachada' %}
+<div class="modal fade" id="receptionModal"><div class="modal-dialog"><div class="modal-content">
+    <form method="POST" action="{{ url_for('dispatch.confirm_reception', id=order.id) }}">
+    <div class="modal-header"><h5>Confirmar Recepción</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <div class="mb-2"><label>Estado</label><select name="status" class="form-select"><option value="total">Total</option><option value="parcial">Parcial</option><option value="con_discrepancias">Con discrepancias</option></select></div>
+        <div class="mb-2"><label>Discrepancias</label><textarea name="discrepancies" class="form-control" rows="2"></textarea></div>
+        <div class="mb-2"><label>Notas</label><textarea name="notes" class="form-control" rows="2"></textarea></div>
+    </div>
+    <div class="modal-footer"><button type="submit" class="btn btn-success">Confirmar</button></div></form>
+</div></div></div>
+{% endif %}
+{% endblock %}

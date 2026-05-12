@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Planes de Cosecha{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="section-title mb-0"><i class="bi bi-calendar-check"></i> Planes de Cosecha</h4>
+    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#newModal">+ Nuevo Plan</button>
+</div>
+<div class="card"><div class="card-body p-0">
+<table class="table table-hover mb-0">
+    <thead><tr><th>CUL</th><th>Fecha planificada</th><th>Sector</th><th>Sala secado</th><th>Responsables</th><th>Estado</th><th></th></tr></thead>
+    <tbody>
+    {% for p in plans %}
+    <tr><td>{{ p.cul.code if p.cul else '-' }}</td><td>{{ p.planned_date.strftime('%d/%m/%Y') if p.planned_date else '-' }}</td>
+        <td>{{ '-' }}</td><td>{{ '-' }}</td><td class="small">{{ p.responsibles or '-' }}</td>
+        <td><span class="badge bg-{{ 'success' if p.status=='Aprobada' else 'secondary' }}">{{ p.status }}</span></td>
+        <td><button class="btn btn-outline-primary btn-action" data-bs-toggle="modal" data-bs-target="#edit{{ p.id }}">Editar</button></td></tr>
+    <div class="modal fade" id="edit{{ p.id }}"><div class="modal-dialog"><div class="modal-content">
+        <form method="POST" action="{{ url_for('harvest.plan_save') }}"><input type="hidden" name="plan_id" value="{{ p.id }}">
+        <div class="modal-header"><h5>Editar Plan</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <div class="mb-2"><label>CUL *</label><select name="cul_id" class="form-select">{% for c in culs %}<option value="{{ c.id }}" {{ 'selected' if p.cul_id==c.id }}>{{ c.code }}</option>{% endfor %}</select></div>
+            <div class="mb-2"><label>Fecha planificada</label><input type="date" name="planned_date" class="form-control" value="{{ p.planned_date.strftime('%Y-%m-%d') if p.planned_date else '' }}"></div>
+            <div class="mb-2"><label>Sector cosecha</label><select name="sector_id" class="form-select"><option value="">--</option>{% for s in sectors %}<option value="{{ s.id }}" {{ 'selected' if p.sector_id==s.id }}>{{ s.name }}</option>{% endfor %}</select></div>
+            <div class="mb-2"><label>Sala secado</label><select name="drying_sector_id" class="form-select"><option value="">--</option>{% for s in sectors %}<option value="{{ s.id }}" {{ 'selected' if p.drying_sector_id==s.id }}>{{ s.name }}</option>{% endfor %}</select></div>
+            <div class="mb-2"><label>Responsables</label><input type="text" name="responsibles" class="form-control" value="{{ p.responsibles or '' }}"></div>
+            <div class="mb-2"><label>Checklist muestreo</label><textarea name="sampling_checklist" class="form-control" rows="2">{{ p.sampling_checklist or '' }}</textarea></div>
+        </div>
+        <div class="modal-footer"><button type="submit" class="btn btn-success">Guardar</button></div></form>
+    </div></div></div>
+    {% endfor %}
+    </tbody>
+</table></div></div>
+<div class="modal fade" id="newModal"><div class="modal-dialog"><div class="modal-content">
+    <form method="POST" action="{{ url_for('harvest.plan_save') }}">
+    <div class="modal-header"><h5>Nuevo Plan de Cosecha</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <div class="mb-2"><label>CUL *</label><select name="cul_id" class="form-select" required>{% for c in culs %}<option value="{{ c.id }}">{{ c.code }}</option>{% endfor %}</select></div>
+        <div class="mb-2"><label>Fecha planificada</label><input type="date" name="planned_date" class="form-control"></div>
+        <div class="mb-2"><label>Sector cosecha</label><select name="sector_id" class="form-select"><option value="">--</option>{% for s in sectors %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select></div>
+        <div class="mb-2"><label>Sala secado</label><select name="drying_sector_id" class="form-select"><option value="">--</option>{% for s in sectors %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select></div>
+        <div class="mb-2"><label>Responsables</label><input type="text" name="responsibles" class="form-control"></div>
+    </div>
+    <div class="modal-footer"><button type="submit" class="btn btn-success">Crear</button></div></form>
+</div></div></div>
+{% endblock %}

@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Batch {{ batch.code }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="section-title mb-0"><i class="bi bi-collection"></i> Batch: {{ batch.code }}</h4>
+    <a href="{{ url_for('harvest.batches') }}" class="btn btn-outline-secondary btn-sm">Volver</a>
+</div>
+<div class="row g-3 mb-3">
+    <div class="col-md-8">
+        <div class="card"><div class="card-body">
+            <div class="row">
+                <div class="col-md-3"><small class="text-muted">Estado</small><br><span class="badge bg-{{ 'info' if batch.status=='Secado' else 'success' if batch.status=='Deposito' else 'warning' if batch.status=='Curado' else 'danger' if batch.status in ('Retenido','Destruido') else 'secondary' }} fs-6">{{ batch.status }}</span></div>
+                <div class="col-md-3"><small class="text-muted">CUL</small><br><a href="{{ url_for('cultivation.cul_detail', id=batch.cul_id) }}">{{ batch.cul.code if batch.cul else '-' }}</a></div>
+                <div class="col-md-3"><small class="text-muted">Tipo</small><br>{{ batch.batch_type }}</div>
+                <div class="col-md-3"><small class="text-muted">Calidad</small><br>{{ batch.quality_category.name if batch.quality_category else '-' }}</div>
+            </div>
+            <hr>
+            <div class="row">
+                <div class="col-md-3"><small class="text-muted">Peso húmedo</small><br><strong>{{ batch.wet_weight or '-' }} kg</strong></div>
+                <div class="col-md-3"><small class="text-muted">Peso seco</small><br><strong>{{ batch.dry_weight or '-' }} kg</strong></div>
+                <div class="col-md-3"><small class="text-muted">Peso actual</small><br><strong class="text-primary fs-5">{{ batch.current_weight or '-' }} kg</strong></div>
+                <div class="col-md-3"><small class="text-muted">Merma secado</small><br>{% if batch.wet_weight and batch.dry_weight %}{{ "%.1f"|format((batch.wet_weight - batch.dry_weight) / batch.wet_weight * 100) }}%{% else %}-{% endif %}</div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-md-3"><small class="text-muted">Cosecha</small><br>{{ batch.harvest_date.strftime('%d/%m/%Y %H:%M') if batch.harvest_date else '-' }}</div>
+                <div class="col-md-3"><small class="text-muted">Inicio secado</small><br>{{ batch.drying_start.strftime('%d/%m/%Y') if batch.drying_start else '-' }}</div>
+                <div class="col-md-3"><small class="text-muted">Fin secado</small><br>{{ batch.drying_end.strftime('%d/%m/%Y') if batch.drying_end else '-' }}</div>
+                <div class="col-md-3"><small class="text-muted">Equipo</small><br>{{ batch.equipment_used or '-' }}</div>
+            </div>
+        </div></div>
+    </div>
+    <div class="col-md-4">
+        <div class="card"><div class="card-header">Acciones</div><div class="card-body">
+            {% if batch.status == 'Activo' %}
+            <form method="POST" action="{{ url_for('harvest.start_drying', id=batch.id) }}" class="mb-2">
+                <div class="mb-1"><label>Inicio secado</label><input type="datetime-local" name="drying_start" class="form-control form-control-sm" required></div>
+                <div class="mb-1"><label>Sector</label><select name="sector_id" class="form-select form-select-sm"><option value="">--</option>{% for s in sectors %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select></div>
+                <button class="btn btn-sm btn-info w-100">Iniciar Secado</button>
+            </form>
+            {% endif %}
+            {% if batch.status == 'Secado' %}
+            <form method="POST" action="{{ url_for('harvest.end_drying', id=batch.id) }}" class="mb-2">
+                <div class="mb-1"><label>Fin secado</label><input type="datetime-local" name="drying_end" class="form-control form-control-sm" required></div>
+                <div class="mb-1"><label>Peso seco (kg) *</label><input type="number" step="any" name="dry_weight" class="form-control form-control-sm" required></div>
+                <button class="btn btn-sm btn-success w-100">Finalizar Secado</button>
+            </form>
+            {% endif %}
+            {% if batch.status in ('Seco', 'Deposito') %}
+            <form method="POST" action="{{ url_for('harvest.start_curing', id=batch.id) }}" class="mb-2"><button class="btn btn-sm btn-outline-info w-100">Iniciar Curado</button></form>
+            {% endif %}
+            {% if batch.status == 'Curado' %}
+            <form method="POST" action="{{ url_for('harvest.end_curing', id=batch.id) }}" class="mb-2"><button class="btn btn-sm btn-outline-success w-100">Finalizar Curado</button></form>
+            {% endif %}
+            {% if batch.status not in ('Retenido', 'Destruido') %}
+            <form method="POST" action="{{ url_for('harvest.retain_batch', id=batch.id) }}" class="mb-2"><button class="btn btn-sm btn-outline-warning w-100">Retener</button></form>
+            {% endif %}
+            {% if batch.status == 'Retenido' %}
+            <form method="POST" action="{{ url_for('harvest.release_batch', id=batch.id) }}" class="mb-2"><button class="btn btn-sm btn-outline-success w-100">Liberar</button></form>
+            {% endif %}
+            {% if current_user.role and current_user.role.name == 'Administrador' %}
+            <hr>
+            <form method="POST" action="{{ url_for('harvest.batch_delete', id=batch.id) }}"
+                  onsubmit="return confirm('⚠️ ¿Eliminar el batch {{ batch.code }}?\n\nEsta acción es irreversible y eliminará todos los registros asociados (muestras, mermas, movimientos).')">
+                <button class="btn btn-sm btn-danger w-100">
+                    <i class="bi bi-trash3"></i> Eliminar batch
+                </button>
+            </form>
+            {% endif %}
+            <hr>
+            <form method="POST" action="{{ url_for('harvest.classify_batch', id=batch.id) }}">
+                <div class="mb-1"><label>Clasificar calidad</label><select name="quality_category_id" class="form-select form-select-sm">{% for q in quality_cats %}<option value="{{ q.id }}">{{ q.name }}</option>{% endfor %}</select></div>
+                <button class="btn btn-sm btn-outline-primary w-100">Clasificar</button>
+            </form>
+            <hr>
+            <form method="POST" action="{{ url_for('harvest.assign_container', id=batch.id) }}">
+                <div class="mb-1"><label>Asignar contenedor</label><select name="container_id" class="form-select form-select-sm">{% for c in containers %}<option value="{{ c.id }}">{{ c.code }}</option>{% endfor %}</select></div>
+                <button class="btn btn-sm btn-outline-secondary w-100">Asignar</button>
+            </form>
+        </div></div>
+    </div>
+</div>
+
+<ul class="nav nav-tabs" role="tablist">
+    <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#sublots">Sublotes ({{ sub_batches|length }})</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#wastages">Mermas ({{ wastages|length }})</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#destruction">Destrucción</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#newSub">+ Sublote</a></li>
+</ul>
+<div class="tab-content mt-3">
+    <div class="tab-pane fade show active" id="sublots">
+        <table class="table table-sm">
+            <thead><tr><th>Código</th><th>Peso</th><th>Calidad</th><th>Estado</th><th></th></tr></thead>
+            <tbody>{% for s in sub_batches %}
+            <tr><td><a href="{{ url_for('harvest.batch_detail', id=s.id) }}">{{ s.code }}</a></td><td>{{ s.current_weight }} kg</td><td>{{ s.quality_category.name if s.quality_category else '-' }}</td><td>{{ s.status }}</td>
+                <td><a href="{{ url_for('harvest.batch_detail', id=s.id) }}" class="btn btn-outline-primary btn-action">Ver</a></td></tr>
+            {% endfor %}</tbody>
+        </table>
+    </div>
+    <div class="tab-pane fade" id="wastages">
+        <table class="table table-sm">
+            <thead><tr><th>Fecha</th><th>Cantidad</th><th>Motivo</th><th>Notas</th></tr></thead>
+            <tbody>{% for w in wastages %}
+            <tr><td>{{ w.date.strftime('%d/%m/%Y') if w.date else '' }}</td><td>{{ w.quantity }}</td><td>{{ w.reason.name if w.reason else '-' }}</td><td>{{ w.notes or '' }}</td></tr>
+            {% endfor %}</tbody>
+        </table>
+        <form method="POST" action="{{ url_for('harvest.wastage_create') }}" class="mt-2">
+            <input type="hidden" name="batch_id" value="{{ batch.id }}">
+            <div class="row g-2">
+                <div class="col-md-3"><label>Cantidad *</label><input type="number" step="any" name="quantity" class="form-control form-control-sm" required></div>
+                <div class="col-md-3"><label>Motivo</label><select name="reason_id" class="form-select form-select-sm"><option value="">--</option>{% for r in wastage_reasons %}<option value="{{ r.id }}">{{ r.name }}</option>{% endfor %}</select></div>
+                <div class="col-md-4"><label>Notas</label><input type="text" name="notes" class="form-control form-control-sm"></div>
+                <div class="col-md-2 d-flex align-items-end"><button class="btn btn-sm btn-warning w-100">Registrar Merma</button></div>
+            </div>
+        </form>
+    </div>
+    <div class="tab-pane fade" id="destruction">
+        <form method="POST" action="{{ url_for('harvest.destruction_create') }}">
+            <input type="hidden" name="batch_id" value="{{ batch.id }}">
+            <div class="row g-2">
+                <div class="col-md-3"><label>Cantidad *</label><input type="number" step="any" name="quantity" class="form-control" required></div>
+                <div class="col-md-3"><label>Nº Acta</label><input type="text" name="act_number" class="form-control"></div>
+                <div class="col-md-4"><label>Motivo *</label><textarea name="reason" class="form-control" rows="1" required></textarea></div>
+                <div class="col-md-2 d-flex align-items-end"><button class="btn btn-danger w-100" data-confirm="¿Confirmar destrucción?">Destruir</button></div>
+            </div>
+        </form>
+    </div>
+    <div class="tab-pane fade" id="newSub">
+        <form method="POST" action="{{ url_for('harvest.create_sublot', id=batch.id) }}">
+            <div class="row g-2">
+                <div class="col-md-3"><label>Peso (kg) *</label><input type="number" step="any" name="weight" class="form-control" required><small class="text-muted">Disponible: {{ batch.current_weight }} kg</small></div>
+                <div class="col-md-3"><label>Calidad</label><select name="quality_category_id" class="form-select"><option value="">--</option>{% for q in quality_cats %}<option value="{{ q.id }}">{{ q.name }}</option>{% endfor %}</select></div>
+                <div class="col-md-4"><label>Notas</label><input type="text" name="notes" class="form-control"></div>
+                <div class="col-md-2 d-flex align-items-end"><button class="btn btn-primary w-100">Crear Sublote</button></div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

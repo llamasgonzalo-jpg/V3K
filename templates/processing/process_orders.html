@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Órdenes de Proceso{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="section-title mb-0"><i class="bi bi-moisture"></i> Órdenes de Proceso</h4>
+    <form method="POST" action="{{ url_for('processing.order_create') }}" class="d-inline">
+        <input type="text" name="objective" class="form-control-sm d-inline" placeholder="Objetivo" style="width:200px">
+        <select name="facility_type" class="form-select-sm d-inline" style="width:100px"><option>interno</option><option>tercero</option></select>
+        <button class="btn btn-success btn-sm">+ Nueva Orden</button>
+    </form>
+</div>
+<div class="card"><div class="card-body p-0">
+<table class="table table-hover mb-0">
+    <thead><tr><th>Código</th><th>Fecha</th><th>Objetivo</th><th>Instalación</th><th>Estado</th><th></th></tr></thead>
+    <tbody>
+    {% for o in orders %}
+    <tr><td><a href="{{ url_for('processing.order_detail', id=o.id) }}"><strong>{{ o.code }}</strong></a></td>
+        <td>{{ o.created_at.strftime('%d/%m/%Y') if o.created_at else '' }}</td>
+        <td class="small">{{ o.objective|truncate(60) if o.objective else '-' }}</td>
+        <td>{{ o.facility or '-' }} ({{ o.facility_type }})</td>
+        <td><span class="badge bg-{{ 'success' if o.status=='Cerrada' else 'info' if o.status=='En proceso' else 'secondary' }}">{{ o.status }}</span></td>
+        <td><a href="{{ url_for('processing.order_detail', id=o.id) }}" class="btn btn-outline-primary btn-action">Ver</a></td></tr>
+    {% endfor %}
+    </tbody>
+</table></div></div>
+{% endblock %}

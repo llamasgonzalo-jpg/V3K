@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Iniciar Sesión{% endblock %}
+{% block public_content %}
+<div class="login-container">
+    <div class="card shadow">
+        <div class="card-body p-4">
+            <div class="text-center mb-4">
+                <img src="{{ url_for('static', filename='img/v3k-logo.png') }}"
+                     alt="V3K" class="login-logo-shadow"
+                     style="width:220px; height:auto; margin-bottom:10px;">
+                <p class="text-muted mb-0" style="font-size:0.85rem; letter-spacing:1px; text-transform:uppercase;">Sistema de Trazabilidad</p>
+                <p class="text-muted" style="font-size:0.78rem;">Res. 709 — Cannabis medicinal</p>
+            </div>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+            <form method="POST">
+                <div class="mb-3">
+                    <label class="form-label">Usuario o Email</label>
+                    <input type="text" name="username" class="form-control" required autofocus>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Contraseña</label>
+                    <input type="password" name="password" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-success w-100 mb-3">Iniciar Sesión</button>
+                <div class="text-center">
+                    <a href="{{ url_for('auth.password_reset') }}" class="text-muted small">Olvidé mi contraseña</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

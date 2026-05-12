@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Reglas de Codificación{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="section-title mb-0"><i class="bi bi-upc-scan"></i> Reglas de Codificación</h4>
+    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#newModal">+ Nueva Regla</button>
+</div>
+<div class="card"><div class="card-body p-0">
+<table class="table table-hover mb-0">
+    <thead><tr><th>Tipo</th><th>Patrón</th><th>Etapas válidas</th><th>Descripción</th><th></th></tr></thead>
+    <tbody>
+    {% for r in rules %}
+    <tr><td><span class="badge bg-primary">{{ r.rule_type }}</span></td><td><code>{{ r.pattern }}</code></td><td>{{ r.valid_stages or '-' }}</td><td class="small">{{ r.description or '' }}</td>
+        <td><button class="btn btn-outline-primary btn-action" data-bs-toggle="modal" data-bs-target="#edit{{ r.id }}">Editar</button></td></tr>
+    <div class="modal fade" id="edit{{ r.id }}"><div class="modal-dialog"><div class="modal-content">
+        <form method="POST"><input type="hidden" name="item_id" value="{{ r.id }}">
+        <div class="modal-header"><h5>Editar Regla</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <div class="mb-2"><label>Tipo *</label><select name="rule_type" class="form-select"><option value="CUL" {{ 'selected' if r.rule_type=='CUL' }}>CUL</option><option value="GF" {{ 'selected' if r.rule_type=='GF' }}>GF</option><option value="SPIG_BCP" {{ 'selected' if r.rule_type=='SPIG_BCP' }}>SPIG-BCP</option></select></div>
+            <div class="mb-2"><label>Patrón *</label><input type="text" name="pattern" class="form-control" value="{{ r.pattern }}" required></div>
+            <div class="mb-2"><label>Etapas válidas</label><input type="text" name="valid_stages" class="form-control" value="{{ r.valid_stages or '' }}" placeholder="VG,FL,PC,DIM"></div>
+            <div class="mb-2"><label>Descripción</label><textarea name="description" class="form-control" rows="2">{{ r.description or '' }}</textarea></div>
+        </div>
+        <div class="modal-footer"><button type="submit" class="btn btn-success">Guardar</button></div></form>
+    </div></div></div>
+    {% endfor %}
+    </tbody>
+</table></div></div>
+<div class="modal fade" id="newModal"><div class="modal-dialog"><div class="modal-content">
+    <form method="POST"><div class="modal-header"><h5>Nueva Regla</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <div class="mb-2"><label>Tipo *</label><select name="rule_type" class="form-select"><option value="CUL">CUL</option><option value="GF">GF</option><option value="SPIG_BCP">SPIG-BCP</option></select></div>
+        <div class="mb-2"><label>Patrón *</label><input type="text" name="pattern" class="form-control" required placeholder="Año-Permiso-Predio-Sala-Lote-Etapa"></div>
+        <div class="mb-2"><label>Etapas válidas</label><input type="text" name="valid_stages" class="form-control" placeholder="VG,FL,PC,DIM"></div>
+        <div class="mb-2"><label>Descripción</label><textarea name="description" class="form-control" rows="2"></textarea></div>
+    </div>
+    <div class="modal-footer"><button type="submit" class="btn btn-success">Crear</button></div></form>
+</div></div></div>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Reporte Consumo{% endblock %}
+{% block content %}
+<h4 class="section-title"><i class="bi bi-bar-chart"></i> Reporte de Consumo de Insumos</h4>
+<div class="card"><div class="card-body p-0">
+<table class="table table-sm mb-0">
+    <thead><tr><th>Fecha</th><th>Insumo</th><th>Cantidad</th><th>Evento</th></tr></thead>
+    <tbody>
+    {% for c in consumptions %}
+    <tr><td>{{ c.date.strftime('%d/%m/%Y') if c.date else '' }}</td><td>{{ '-' }}</td><td>{{ c.quantity }}</td><td>{{ c.event_id or '-' }}</td></tr>
+    {% endfor %}
+    </tbody>
+</table></div></div>
+{% endblock %}

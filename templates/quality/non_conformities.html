@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}No Conformidades{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="section-title mb-0"><i class="bi bi-exclamation-triangle"></i> No Conformidades</h4>
+    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#newModal">+ Nueva NC</button>
+</div>
+<div class="card"><div class="card-body p-0">
+<table class="table table-hover mb-0">
+    <thead><tr><th>Código</th><th>Descripción</th><th>Severidad</th><th>Estado</th><th>Entidad</th><th>Fecha</th><th></th></tr></thead>
+    <tbody>{% for nc in ncs %}
+    <tr><td><strong>{{ nc.code or '-' }}</strong></td>
+        <td class="small">{{ nc.description|truncate(60) }}</td>
+        <td><span class="badge bg-{{ 'danger' if nc.severity=='critica' else 'warning' if nc.severity=='mayor' else 'info' }}">{{ nc.severity }}</span></td>
+        <td><span class="badge bg-{{ 'success' if nc.status=='Cerrada' else 'primary' if nc.status=='En tratamiento' else 'secondary' }}">{{ nc.status }}</span></td>
+        <td class="small">{{ nc.entity_type }} #{{ nc.entity_id or '' }}</td>
+        <td>{{ nc.created_at.strftime('%d/%m/%Y') if nc.created_at else '' }}</td>
+        <td><a href="{{ url_for('quality.nc_detail', id=nc.id) }}" class="btn btn-outline-primary btn-action">Ver</a></td></tr>
+    {% endfor %}</tbody>
+</table></div></div>
+<div class="modal fade" id="newModal"><div class="modal-dialog"><div class="modal-content">
+    <form method="POST" action="{{ url_for('quality.nc_create') }}">
+    <div class="modal-header"><h5>Nueva No Conformidad</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <div class="mb-2"><label>Descripción *</label><textarea name="description" class="form-control" rows="3" required></textarea></div>
+        <div class="mb-2"><label>Severidad</label><select name="severity" class="form-select"><option>menor</option><option>mayor</option><option>critica</option></select></div>
+        <div class="mb-2"><label>Tipo entidad</label><input type="text" name="entity_type" class="form-control" placeholder="Ej: Batch, Sample, CUL"></div>
+        <div class="mb-2"><label>ID entidad</label><input type="number" name="entity_id" class="form-control"></div>
+        <div class="mb-2"><label>CUL relacionado</label><input type="number" name="cul_id" class="form-control"></div>
+    </div>
+    <div class="modal-footer"><button type="submit" class="btn btn-success">Crear</button></div></form>
+</div></div></div>
+{% endblock %}

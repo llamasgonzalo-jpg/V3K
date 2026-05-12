@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Stock{% endblock %}
+{% block content %}
+<h4 class="section-title"><i class="bi bi-boxes"></i> Stock de Insumos</h4>
+{% if alerts %}
+<div class="alert alert-warning"><strong>Alertas de stock mínimo:</strong>
+{% for a in alerts %}<br>- {{ a.supply }} ({{ a.warehouse }}): {{ a.current }} / mín {{ a.min }}{% endfor %}</div>
+{% endif %}
+{% if expiring %}
+<div class="alert alert-danger"><strong>Insumos próximos a vencer (30 días):</strong>
+{% for e in expiring %}<br>- {{ e.supply.name if e.supply else '' }} | Lote: {{ e.batch_lot or '-' }} | Vence: {{ e.expiry_date.strftime('%d/%m/%Y') if e.expiry_date else '' }}{% endfor %}</div>
+{% endif %}
+<div class="card"><div class="card-body p-0">
+<table class="table table-hover mb-0">
+    <thead><tr><th>Insumo</th><th>Depósito</th><th>Cantidad</th></tr></thead>
+    <tbody>
+    {% for ss, supply, wh in stocks %}
+    <tr class="{{ 'table-warning' if supply.min_stock and ss.quantity < supply.min_stock else '' }}">
+        <td><strong>{{ supply.name }}</strong></td><td>{{ wh.name }}</td><td>{{ ss.quantity }} {{ supply.unit.abbreviation if supply.unit else '' }}</td></tr>
+    {% endfor %}
+    </tbody>
+</table></div></div>
+{% endblock %}

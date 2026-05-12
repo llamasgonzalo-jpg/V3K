@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Productos{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="section-title mb-0"><i class="bi bi-bag"></i> Productos / SKU</h4>
+    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#newModal">+ Nuevo</button>
+</div>
+<div class="card"><div class="card-body p-0">
+<table class="table table-hover mb-0">
+    <thead><tr><th>SKU</th><th>Nombre</th><th>Unidad</th><th></th></tr></thead>
+    <tbody>{% for p in products %}
+    <tr><td><strong>{{ p.sku }}</strong></td><td>{{ p.name }}</td><td>{{ '-' }}</td>
+        <td><button class="btn btn-outline-primary btn-action" data-bs-toggle="modal" data-bs-target="#edit{{ p.id }}">Editar</button></td></tr>
+    <div class="modal fade" id="edit{{ p.id }}"><div class="modal-dialog"><div class="modal-content">
+        <form method="POST" action="{{ url_for('processing.product_save') }}"><input type="hidden" name="product_id" value="{{ p.id }}">
+        <div class="modal-header"><h5>Editar</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <div class="mb-2"><label>SKU *</label><input type="text" name="sku" class="form-control" value="{{ p.sku }}" required></div>
+            <div class="mb-2"><label>Nombre *</label><input type="text" name="name" class="form-control" value="{{ p.name }}" required></div>
+            <div class="mb-2"><label>Unidad</label><select name="unit_id" class="form-select"><option value="">--</option>{% for u in units %}<option value="{{ u.id }}">{{ u.name }}</option>{% endfor %}</select></div>
+        </div>
+        <div class="modal-footer"><button type="submit" class="btn btn-success">Guardar</button></div></form>
+    </div></div></div>
+    {% endfor %}</tbody>
+</table></div></div>
+<div class="modal fade" id="newModal"><div class="modal-dialog"><div class="modal-content">
+    <form method="POST" action="{{ url_for('processing.product_save') }}">
+    <div class="modal-header"><h5>Nuevo Producto</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <div class="mb-2"><label>SKU *</label><input type="text" name="sku" class="form-control" required></div>
+        <div class="mb-2"><label>Nombre *</label><input type="text" name="name" class="form-control" required></div>
+        <div class="mb-2"><label>Unidad</label><select name="unit_id" class="form-select"><option value="">--</option>{% for u in units %}<option value="{{ u.id }}">{{ u.name }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="modal-footer"><button type="submit" class="btn btn-success">Crear</button></div></form>
+</div></div></div>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Genéticas{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="section-title mb-0"><i class="bi bi-diagram-3"></i> Genéticas / Variedades</h4>
+    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#newModal">+ Nueva</button>
+</div>
+<div class="card"><div class="card-body p-0">
+<table class="table table-hover mb-0">
+    <thead><tr><th>Nombre</th><th>Código</th><th>Origen</th><th>Quimiotipo</th><th>Estado Registral</th><th>SPIG</th><th>Vencimiento</th><th></th></tr></thead>
+    <tbody>
+    {% for g in genetics %}
+    <tr><td><strong>{{ g.name }}</strong></td><td>{{ g.code or '-' }}</td><td>{{ g.origin or '-' }}</td>
+        <td><span class="badge bg-info">{{ g.expected_chemotype or '-' }}</span></td>
+        <td><span class="badge bg-{{ 'success' if g.registry_status=='INASE' else 'warning' if g.registry_status=='SPIG-BCP' else 'secondary' }}">{{ g.registry_status or '-' }}</span></td>
+        <td>{{ g.spig_code or '-' }}</td>
+        <td>{{ g.registry_expiry.strftime('%d/%m/%Y') if g.registry_expiry else '-' }}</td>
+        <td><button class="btn btn-outline-primary btn-action" data-bs-toggle="modal" data-bs-target="#edit{{ g.id }}">Editar</button></td>
+    </tr>
+    <div class="modal fade" id="edit{{ g.id }}"><div class="modal-dialog"><div class="modal-content">
+        <form method="POST" action="{{ url_for('master.genetic_save') }}"><input type="hidden" name="genetic_id" value="{{ g.id }}">
+        <div class="modal-header"><h5>Editar Genética</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <div class="mb-2"><label>Nombre *</label><input type="text" name="name" class="form-control" value="{{ g.name }}" required></div>
+            <div class="mb-2"><label>Código</label><input type="text" name="code" class="form-control" value="{{ g.code or '' }}"></div>
+            <div class="mb-2"><label>Origen</label><input type="text" name="origin" class="form-control" value="{{ g.origin or '' }}"></div>
+            <div class="mb-2"><label>Quimiotipo esperado</label><select name="expected_chemotype" class="form-select"><option value="">--</option>{% for q in ['Q1','Q2','Q3','Q4','Q5'] %}<option {{ 'selected' if g.expected_chemotype==q }}>{{ q }}</option>{% endfor %}</select></div>
+            <div class="mb-2"><label>Estado registral</label><select name="registry_status" class="form-select"><option value="">--</option>{% for s in ['INASE','SPIG-BCP','Banco'] %}<option {{ 'selected' if g.registry_status==s }}>{{ s }}</option>{% endfor %}</select></div>
+            <div class="mb-2"><label>Código SPIG</label><input type="text" name="spig_code" class="form-control" value="{{ g.spig_code or '' }}"></div>
+            <div class="mb-2"><label>Vencimiento registro</label><input type="date" name="registry_expiry" class="form-control" value="{{ g.registry_expiry.strftime('%Y-%m-%d') if g.registry_expiry else '' }}"></div>
+        </div>
+        <div class="modal-footer"><button type="submit" class="btn btn-success">Guardar</button></div></form>
+    </div></div></div>
+    {% endfor %}
+    </tbody>
+</table></div></div>
+<div class="modal fade" id="newModal"><div class="modal-dialog"><div class="modal-content">
+    <form method="POST" action="{{ url_for('master.genetic_save') }}">
+    <div class="modal-header"><h5>Nueva Genética</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <div class="mb-2"><label>Nombre *</label><input type="text" name="name" class="form-control" required></div>
+        <div class="mb-2"><label>Código</label><input type="text" name="code" class="form-control"></div>
+        <div class="mb-2"><label>Origen</label><input type="text" name="origin" class="form-control"></div>
+        <div class="mb-2"><label>Quimiotipo esperado</label><select name="expected_chemotype" class="form-select"><option value="">--</option>{% for q in ['Q1','Q2','Q3','Q4','Q5'] %}<option>{{ q }}</option>{% endfor %}</select></div>
+        <div class="mb-2"><label>Estado registral</label><select name="registry_status" class="form-select"><option value="">--</option>{% for s in ['INASE','SPIG-BCP','Banco'] %}<option>{{ s }}</option>{% endfor %}</select></div>
+        <div class="mb-2"><label>Código SPIG</label><input type="text" name="spig_code" class="form-control"></div>
+        <div class="mb-2"><label>Vencimiento registro</label><input type="date" name="registry_expiry" class="form-control"></div>
+    </div>
+    <div class="modal-footer"><button type="submit" class="btn btn-success">Crear</button></div></form>
+</div></div></div>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}SPIG-BCP{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="section-title mb-0"><i class="bi bi-file-earmark-medical"></i> Registros SPIG-BCP</h4>
+    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#newModal">+ Nuevo</button>
+</div>
+<div class="card"><div class="card-body p-0">
+<table class="table table-hover mb-0">
+    <thead><tr><th>Código</th><th>Genética</th><th>Tipo</th><th>Emisión</th><th>Vencimiento</th><th>Estado</th><th></th></tr></thead>
+    <tbody>
+    {% for r in records %}
+    <tr><td><strong>{{ r.code }}</strong></td><td>{{ r.genetic.name if r.genetic else '-' }}</td>
+        <td><span class="badge bg-primary">{{ r.material_type or '-' }}</span></td>
+        <td>{{ r.issued_at.strftime('%d/%m/%Y') if r.issued_at else '-' }}</td>
+        <td>{{ r.expires_at.strftime('%d/%m/%Y') if r.expires_at else '-' }}</td>
+        <td><span class="badge bg-{{ 'success' if r.status=='Vigente' else 'danger' if r.status=='Vencido' else 'warning' }}">{{ r.status }}</span></td>
+        <td><button class="btn btn-outline-primary btn-action" data-bs-toggle="modal" data-bs-target="#edit{{ r.id }}">Editar</button></td></tr>
+    <div class="modal fade" id="edit{{ r.id }}"><div class="modal-dialog"><div class="modal-content">
+        <form method="POST" action="{{ url_for('cultivation.spig_save') }}"><input type="hidden" name="spig_id" value="{{ r.id }}">
+        <div class="modal-header"><h5>Editar SPIG-BCP</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <div class="mb-2"><label>Código *</label><input type="text" name="code" class="form-control" value="{{ r.code }}" required></div>
+            <div class="mb-2"><label>Genética</label><select name="genetic_id" class="form-select"><option value="">--</option>{% for g in genetics %}<option value="{{ g.id }}" {{ 'selected' if r.genetic_id==g.id }}>{{ g.name }}</option>{% endfor %}</select></div>
+            <div class="mb-2"><label>Tipo material</label><select name="material_type" class="form-select">{% for t in ['S','C','P','T'] %}<option {{ 'selected' if r.material_type==t }}>{{ t }}</option>{% endfor %}</select></div>
+            <div class="mb-2"><label>Aval técnico</label><input type="text" name="tech_endorsement" class="form-control" value="{{ r.tech_endorsement or '' }}"></div>
+            <div class="row"><div class="col"><label>Emisión</label><input type="date" name="issued_at" class="form-control" value="{{ r.issued_at.strftime('%Y-%m-%d') if r.issued_at else '' }}"></div>
+            <div class="col"><label>Vencimiento</label><input type="date" name="expires_at" class="form-control" value="{{ r.expires_at.strftime('%Y-%m-%d') if r.expires_at else '' }}"></div></div>
+            <div class="mb-2 mt-2"><label>Estado</label><select name="status" class="form-select">{% for s in ['Vigente','Vencido','Suspendido','Baja'] %}<option {{ 'selected' if r.status==s }}>{{ s }}</option>{% endfor %}</select></div>
+        </div>
+        <div class="modal-footer"><button type="submit" class="btn btn-success">Guardar</button></div></form>
+    </div></div></div>
+    {% endfor %}
+    </tbody>
+</table></div></div>
+<div class="modal fade" id="newModal"><div class="modal-dialog"><div class="modal-content">
+    <form method="POST" action="{{ url_for('cultivation.spig_save') }}">
+    <div class="modal-header"><h5>Nuevo SPIG-BCP</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <div class="mb-2"><label>Código *</label><input type="text" name="code" class="form-control" required placeholder="RPCCI-BCP-2026-S-ACT-001"></div>
+        <div class="mb-2"><label>Genética</label><select name="genetic_id" class="form-select"><option value="">--</option>{% for g in genetics %}<option value="{{ g.id }}">{{ g.name }}</option>{% endfor %}</select></div>
+        <div class="mb-2"><label>Tipo material</label><select name="material_type" class="form-select"><option value="S">Semilla</option><option value="C">Clon</option><option value="P">Planta</option><option value="T">Tejido</option></select></div>
+        <div class="mb-2"><label>Aval técnico (Ing.)</label><input type="text" name="tech_endorsement" class="form-control"></div>
+        <div class="row"><div class="col"><label>Emisión</label><input type="date" name="issued_at" class="form-control"></div>
+        <div class="col"><label>Vencimiento</label><input type="date" name="expires_at" class="form-control"></div></div>
+    </div>
+    <div class="modal-footer"><button type="submit" class="btn btn-success">Crear</button></div></form>
+</div></div></div>
+{% endblock %}

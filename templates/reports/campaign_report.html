@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Reporte por Campaña{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="section-title mb-0"><i class="bi bi-calendar3"></i> Reporte por Campaña</h4>
+    <a href="{{ url_for('reports.index') }}" class="btn btn-outline-secondary btn-sm">Volver</a>
+</div>
+<div class="card mb-3"><div class="card-body">
+<form method="GET" class="row g-2">
+    <div class="col-md-4"><select name="campaign_id" class="form-select">
+        <option value="">Seleccionar campaña</option>
+        {% for c in campaigns %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+    </select></div>
+    <div class="col-md-2"><button class="btn btn-primary">Ver</button></div>
+</form></div></div>
+{% if report %}
+<div class="row g-3 mb-3">
+    <div class="col-md-3"><div class="card"><div class="card-body text-center"><h3>{{ report.culs|length }}</h3><small class="text-muted">CULs</small></div></div></div>
+    <div class="col-md-3"><div class="card"><div class="card-body text-center"><h3>{{ report.batches|length }}</h3><small class="text-muted">Batches</small></div></div></div>
+    <div class="col-md-3"><div class="card"><div class="card-body text-center"><h3>{{ report.total_dry }} kg</h3><small class="text-muted">Total seco</small></div></div></div>
+    <div class="col-md-3"><div class="card"><div class="card-body text-center"><h3>{{ report.total_stock }} kg</h3><small class="text-muted">Stock actual</small></div></div></div>
+</div>
+<div class="card"><div class="card-header">Detalle CULs - {{ report.campaign.name }}</div><div class="card-body p-0">
+<table class="table table-sm mb-0">
+    <thead><tr><th>CUL</th><th>Etapa</th><th>Quimiotipo</th><th>Plantas</th><th>Estado</th></tr></thead>
+    <tbody>{% for c in report.culs %}
+    <tr><td>{{ c.code }}</td><td>{{ c.stage }}</td><td>{{ c.chemotype or '-' }}</td><td>{{ c.plant_count or '-' }}</td>
+        <td><span class="badge bg-info">{{ c.status }}</span></td></tr>
+    {% endfor %}</tbody>
+</table></div></div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Recepciones de Insumos{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="section-title mb-0"><i class="bi bi-box-arrow-in-down"></i> Recepciones de Insumos</h4>
+    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#newModal">+ Nueva</button>
+</div>
+<div class="card"><div class="card-body p-0">
+<table class="table table-hover mb-0">
+    <thead><tr><th>Fecha</th><th>Insumo</th><th>Proveedor</th><th>Depósito</th><th>Lote</th><th>Cantidad</th><th>Vencimiento</th></tr></thead>
+    <tbody>
+    {% for r in receptions %}
+    <tr><td>{{ r.received_at.strftime('%d/%m/%Y') if r.received_at else '' }}</td><td>{{ r.supply.name if r.supply else '-' }}</td>
+        <td>{{ r.supplier.name if r.supplier else '-' }}</td><td>{{ r.warehouse.name if r.warehouse else '-' }}</td>
+        <td>{{ r.batch_lot or '-' }}</td><td><strong>{{ r.quantity }}</strong></td>
+        <td>{{ r.expiry_date.strftime('%d/%m/%Y') if r.expiry_date else '-' }}</td></tr>
+    {% endfor %}
+    </tbody>
+</table></div></div>
+<div class="modal fade" id="newModal"><div class="modal-dialog"><div class="modal-content">
+    <form method="POST" action="{{ url_for('inventory.reception_create') }}">
+    <div class="modal-header"><h5>Nueva Recepción</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <div class="mb-2"><label>Insumo *</label><select name="supply_id" class="form-select" required>{% for s in supplies %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select></div>
+        <div class="mb-2"><label>Proveedor</label><select name="supplier_id" class="form-select"><option value="">--</option>{% for s in suppliers %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select></div>
+        <div class="mb-2"><label>Depósito</label><select name="warehouse_id" class="form-select"><option value="">--</option>{% for w in warehouses %}<option value="{{ w.id }}">{{ w.name }}</option>{% endfor %}</select></div>
+        <div class="row g-2"><div class="col"><label>Cantidad *</label><input type="number" step="any" name="quantity" class="form-control" required></div>
+        <div class="col"><label>Lote/Partida</label><input type="text" name="batch_lot" class="form-control"></div></div>
+        <div class="mb-2 mt-2"><label>Vencimiento</label><input type="date" name="expiry_date" class="form-control"></div>
+    </div>
+    <div class="modal-footer"><button type="submit" class="btn btn-success">Registrar</button></div></form>
+</div></div></div>
+{% endblock %}

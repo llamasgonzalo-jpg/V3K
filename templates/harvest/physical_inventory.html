@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Inventario Físico{% endblock %}
+{% block content %}
+<h4 class="section-title"><i class="bi bi-clipboard-data"></i> Inventario Físico</h4>
+<div class="row g-3">
+<div class="col-md-8">
+<div class="card"><div class="card-header">Batches en depósito</div><div class="card-body p-0">
+<table class="table table-sm mb-0">
+    <thead><tr><th>Batch</th><th>CUL</th><th>Estado</th><th>Peso actual</th><th>Contenedor</th></tr></thead>
+    <tbody>
+    {% for b in batches %}
+    <tr><td><a href="{{ url_for('harvest.batch_detail', id=b.id) }}">{{ b.code }}</a></td><td>{{ b.cul.code if b.cul else '-' }}</td>
+        <td><span class="badge bg-info">{{ b.status }}</span></td><td><strong>{{ b.current_weight or 0 }} kg</strong></td>
+        <td>{{ b.container_rel.code if b.container_rel else '-' }}</td></tr>
+    {% endfor %}
+    </tbody>
+</table></div></div>
+</div>
+<div class="col-md-4">
+<div class="card"><div class="card-header">Contenedores</div><div class="card-body p-0">
+<table class="table table-sm mb-0">
+    <thead><tr><th>Código</th><th>Tipo</th><th>Sector</th></tr></thead>
+    <tbody>
+    {% for c in containers %}
+    <tr><td>{{ c.code }}</td><td>{{ c.container_type or '-' }}</td><td>{{ c.sector.name if c.sector else '-' }}</td></tr>
+    {% endfor %}
+    </tbody>
+</table></div></div>
+</div>
+</div>
+{% endblock %}

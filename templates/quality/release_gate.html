@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Liberación de Calidad{% endblock %}
+{% block content %}
+<h4 class="section-title"><i class="bi bi-shield-check"></i> Liberación de Calidad (Release Gate)</h4>
+<div class="card"><div class="card-body p-0">
+<table class="table table-hover mb-0">
+    <thead><tr><th>Batch</th><th>CUL</th><th>Estado</th><th>Peso actual</th><th>Decisión</th></tr></thead>
+    <tbody>{% for b in batches %}
+    <tr><td><strong>{{ b.code }}</strong></td>
+        <td>{{ b.cul.code if b.cul else '-' }}</td>
+        <td><span class="badge bg-info">{{ b.status }}</span></td>
+        <td>{{ b.current_weight or 0 }} kg</td>
+        <td><form method="POST" action="{{ url_for('quality.release_decide', batch_id=b.id) }}" class="d-inline">
+            <select name="decision" class="form-select form-select-sm d-inline" style="width:120px">
+                <option value="liberar">Liberar</option><option value="retener">Retener</option>
+            </select>
+            <button class="btn btn-sm btn-outline-primary">Aplicar</button>
+        </form></td></tr>
+    {% endfor %}</tbody>
+</table></div></div>
+{% endblock %}

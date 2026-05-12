@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Reportes{% endblock %}
+{% block content %}
+<h4 class="section-title"><i class="bi bi-bar-chart"></i> Reportes</h4>
+<div class="alert alert-info mb-4"><i class="bi bi-info-circle"></i> <strong>Dashboard Ejecutivo:</strong> <a href="{{ url_for('reports.compliance_dashboard') }}" class="alert-link">Ver Dashboard de Cumplimiento Normativo</a> para supervisión integral del sistema.</div>
+<div class="row g-3">
+    <div class="col-md-4"><div class="card"><div class="card-body text-center">
+        <i class="bi bi-graph-up fs-1 text-primary"></i>
+        <h6 class="mt-2">Rendimiento</h6><p class="small text-muted">Análisis de rendimiento húmedo/seco por batch</p>
+        <a href="{{ url_for('reports.yield_report') }}" class="btn btn-outline-primary btn-sm">Ver reporte</a>
+    </div></div></div>
+    <div class="col-md-4"><div class="card"><div class="card-body text-center">
+        <i class="bi bi-calendar3 fs-1 text-success"></i>
+        <h6 class="mt-2">Por Campaña</h6><p class="small text-muted">Resumen consolidado por campaña</p>
+        <a href="{{ url_for('reports.campaign_report') }}" class="btn btn-outline-success btn-sm">Ver reporte</a>
+    </div></div></div>
+    <div class="col-md-4"><div class="card"><div class="card-body text-center">
+        <i class="bi bi-balance-scale fs-1 text-warning"></i>
+        <h6 class="mt-2">Balance de Masa</h6><p class="small text-muted">Entradas vs salidas en procesamiento</p>
+        <a href="{{ url_for('reports.mass_balance') }}" class="btn btn-outline-warning btn-sm">Ver reporte</a>
+    </div></div></div>
+    <div class="col-md-4"><div class="card"><div class="card-body text-center">
+        <i class="bi bi-search fs-1 text-info"></i>
+        <h6 class="mt-2">Trazabilidad</h6><p class="small text-muted">Búsqueda completa por CUL o Batch</p>
+        <a href="{{ url_for('reports.traceability') }}" class="btn btn-outline-info btn-sm">Ver reporte</a>
+    </div></div></div>
+    <div class="col-md-4"><div class="card"><div class="card-body text-center">
+        <i class="bi bi-file-earmark-text fs-1 text-danger"></i>
+        <h6 class="mt-2">Auditoría por CUL</h6><p class="small text-muted">Historial completo para auditorías</p>
+        <a href="{{ url_for('reports.audit_report') }}" class="btn btn-outline-danger btn-sm">Ver reporte</a>
+    </div></div></div>
+    <div class="col-md-4"><div class="card"><div class="card-body text-center">
+        <i class="bi bi-boxes fs-1 text-secondary"></i>
+        <h6 class="mt-2">Dashboard Stock</h6><p class="small text-muted">Stock por estado de batch</p>
+        <a href="{{ url_for('reports.stock_dashboard') }}" class="btn btn-outline-secondary btn-sm">Ver reporte</a>
+    </div></div></div>
+</div>
+<div class="card mt-4"><div class="card-header">Exportar CSV</div><div class="card-body">
+    <a href="{{ url_for('reports.export_csv', entity='culs') }}" class="btn btn-outline-dark btn-sm me-2"><i class="bi bi-download"></i> CULs</a>
+    <a href="{{ url_for('reports.export_csv', entity='batches') }}" class="btn btn-outline-dark btn-sm me-2"><i class="bi bi-download"></i> Batches</a>
+    <a href="{{ url_for('reports.export_csv', entity='audit') }}" class="btn btn-outline-dark btn-sm"><i class="bi bi-download"></i> Auditoría</a>
+</div></div>
+{% endblock %}

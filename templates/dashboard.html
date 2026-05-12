@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard-light.css') }}">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+{% endblock %}
+{% block content %}
+<div class="dash-wrapper">
+
+<!-- ── Header ── -->
+<div class="dash-header">
+  <div class="dash-greeting">
+    <h1>Bienvenido, {{ current_user.full_name.split()[0] if current_user.full_name else current_user.username }}</h1>
+    <p>{{ now.strftime('%A %d de %B, %Y') | capitalize }} &nbsp;·&nbsp; Sistema Trazabilidad Res. 709</p>
+  </div>
+  <div class="dash-header-actions">
+    <div class="dash-search d-flex gap-1">
+      <form action="{{ url_for('reports.traceability') }}" method="GET" class="d-flex gap-1">
+        <input type="text" name="q" placeholder="Buscar CUL / Batch…">
+        <button class="btn-search"><i class="bi bi-search"></i></button>
+      </form>
+    </div>
+    <a href="{{ url_for('main.notifications_list') }}" class="dash-icon-btn">
+      <i class="bi bi-bell"></i>
+      {% if unread_notifications > 0 %}<span class="notif-dot"></span>{% endif %}
+    </a>
+    <a href="{{ url_for('reports.compliance_dashboard') }}" class="dash-icon-btn" title="Cumplimiento">
+      <i class="bi bi-shield-check"></i>
+    </a>
+    <a href="{{ url_for('admin.audit_log') }}" class="dash-icon-btn" title="Auditoría">
+      <i class="bi bi-clock-history"></i>
+    </a>
+  </div>
+</div>
+
+<!-- ── KPI Row ── -->
+<div class="kpi-row">
+
+  <a href="{{ url_for('cultivation.culs') }}" class="kpi-card">
+    <div class="kpi-icon ic-green"><i class="bi bi-flower1"></i></div>
+    <div class="kpi-value">{{ stats.culs_active }}</div>
+    <div class="kpi-label">CUL Activos</div>
+    <div class="kpi-sub">{{ stats.culs_blocked }} bloqueado{{ 's' if stats.culs_blocked != 1 }}</div>
+  </a>
+
+  <a href="{{ url_for('harvest.batches') }}" class="kpi-card">
+    <div class="kpi-icon ic-blue"><i class="bi bi-collection"></i></div>
+    <div class="kpi-value">{{ stats.batches_total }}</div>
+    <div class="kpi-label">Batches</div>
+    <div class="kpi-sub">{{ stats.batches_drying }} en secado</div>
+  </a>
+
+  <a href="{{ url_for('inventory.stock') }}" class="kpi-card">
+    <div class="kpi-icon ic-purple"><i class="bi bi-box-seam"></i></div>
+    <div class="kpi-value">{{ "%.0f"|format(stats.total_stock_kg) }}</div>
+    <div class="kpi-label">Stock (kg)</div>
+    <div class="kpi-sub">{{ stats.batches_storage }} lotes en depósito</div>
+  </a>
+
+  <a href="{{ url_for('quality.samples') }}" class="kpi-card">
+    <div class="kpi-icon ic-yellow"><i class="bi bi-clipboard-pulse"></i></div>
+    <div class="kpi-value">{{ stats.samples_pending }}</div>
+    <div class="kpi-label">Muestras</div>
+    <div class="kpi-sub">pendientes de resultado</div>
+  </a>
+
+  <a href="{{ url_for('dispatch.orders') }}" class="kpi-card">
+    <div class="kpi-icon ic-gray"><i class="bi bi-truck"></i></div>
+    <div class="kpi-value">{{ stats.dispatch_pending }}</div>
+    <div class="kpi-label">Despachos</div>
+    <div class="kpi-sub">en tránsito / pendientes</div>
+  </a>
+
+  <a href="{{ url_for('cultivation.culs') }}" class="kpi-card">
+    <div class="kpi-icon ic-green"><i class="bi bi-people"></i></div>
+    <div class="kpi-value">{{ stats.plants_active|int }}</div>
+    <div class="kpi-label">Plantas</div>
+    <div class="kpi-sub">VG + FL activas</div>
+  </a>
+
+</div>
+
+<!-- ── Main Grid ── -->
+<div class="main-grid">
+
+  <!-- Batches por Estado -->
+  <div class="panel">
+    <div class="panel-title">
+      <a href="{{ url_for('reports.stock_dashboard') }}">
+        <i class="bi bi-bar-chart"></i> Batches por Estado
+        <i class="bi bi-arrow-up-right ms-auto" style="font-size:.65rem;"></i>
+      </a>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="batchesChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Stock kg -->
+  <div class="panel">
+    <div class="panel-title">
+      <a href="{{ url_for('inventory.stock') }}">
+        <i class="bi bi-pie-chart"></i> Distribución de Stock (kg)
+        <i class="bi bi-arrow-up-right ms-auto" style="font-size:.65rem;"></i>
+      </a>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="stockDoughnut"></canvas>
+    </div>
+  </div>
+
+  <!-- Estado Normativo -->
+  <div class="panel">
+    <div class="panel-title">
+      <a href="{{ url_for('reports.compliance_dashboard') }}">
+        <i class="bi bi-shield-check"></i> Estado Normativo
+        <i class="bi bi-arrow-up-right ms-auto" style="font-size:.65rem;"></i>
+      </a>
+    </div>
+    {% set max_val = [stats.culs_vg, stats.culs_fl, stats.culs_pc, stats.batches_total, stats.genetics_count, 1]|max %}
+    <div class="stage-bars">
+      <div class="sbar">
+        <span class="sbar-name">Vegetativo</span>
+        <div class="sbar-track"><div class="sbar-fill" style="width:{{ (stats.culs_vg / max_val * 100)|int }}%; background:var(--green)"></div></div>
+        <span class="sbar-num">{{ stats.culs_vg }}</span>
+      </div>
+      <div class="sbar">
+        <span class="sbar-name">Floración</span>
+        <div class="sbar-track"><div class="sbar-fill" style="width:{{ (stats.culs_fl / max_val * 100)|int }}%; background:var(--purple)"></div></div>
+        <span class="sbar-num">{{ stats.culs_fl }}</span>
+      </div>
+      <div class="sbar">
+        <span class="sbar-name">Post-cosecha</span>
+        <div class="sbar-track"><div class="sbar-fill" style="width:{{ (stats.culs_pc / max_val * 100)|int }}%; background:var(--yellow)"></div></div>
+        <span class="sbar-num">{{ stats.culs_pc }}</span>
+      </div>
+      <div class="sbar">
+        <span class="sbar-name">Batches total</span>
+        <div class="sbar-track"><div class="sbar-fill" style="width:{{ (stats.batches_total / max_val * 100)|int }}%; background:var(--accent)"></div></div>
+        <span class="sbar-num">{{ stats.batches_total }}</span>
+      </div>
+      <div class="sbar">
+        <span class="sbar-name">Genéticas</span>
+        <div class="sbar-track"><div class="sbar-fill" style="width:{{ (stats.genetics_count / max_val * 100)|int }}%; background:#f97316"></div></div>
+        <span class="sbar-num">{{ stats.genetics_count }}</span>
+      </div>
+      <div class="sbar">
+        <span class="sbar-name">Bloqueados</span>
+        <div class="sbar-track"><div class="sbar-fill" style="width:{{ (stats.culs_blocked / max_val * 100)|int }}%; background:var(--red)"></div></div>
+        <span class="sbar-num">{{ stats.culs_blocked }}</span>
+      </div>
+
+      <div class="metrics-list mt-3">
+        <a href="{{ url_for('quality.non_conformities') }}" class="metric-row">
+          <div class="metric-left"><span class="metric-dot dot-red"></span><span class="metric-name">NC Abiertas</span></div>
+          <span class="metric-val">{{ stats.nc_open }}</span>
+        </a>
+        <a href="{{ url_for('cultivation.rpcci_notifications') }}" class="metric-row">
+          <div class="metric-left"><span class="metric-dot dot-orange"></span><span class="metric-name">RPCCI Pendientes</span></div>
+          <span class="metric-val">{{ stats.rpcci_pending }}</span>
+        </a>
+        <a href="{{ url_for('master.campaigns') }}" class="metric-row">
+          <div class="metric-left"><span class="metric-dot dot-green"></span><span class="metric-name">Campañas Abiertas</span></div>
+          <span class="metric-val">{{ stats.campaigns_open }}</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Bottom Grid ── -->
+<div class="bottom-grid">
+
+  <!-- Actividad Reciente -->
+  <div class="panel">
+    <div class="panel-title"><i class="bi bi-activity"></i> Actividad Reciente</div>
+    <div class="activity-list">
+      {% for e in recent_events %}
+      <div class="activity-item">
+        <div class="activity-dot {% if 'CREATE' in e.action %}dot-green{% elif 'DELETE' in e.action %}dot-red{% elif 'UPDATE' in e.action %}dot-blue{% else %}dot-yellow{% endif %}"></div>
+        <div class="activity-body">
+          <div class="activity-action">{{ e.action }} <span class="ent">{{ e.entity_type }}</span></div>
+          <div class="activity-detail">{{ e.details|truncate(65) if e.details else '—' }}</div>
+        </div>
+        <div class="activity-time">{{ e.created_at.strftime('%d/%m %H:%M') if e.created_at else '' }}</div>
+      </div>
+      {% else %}
+      <p style="font-size:.8rem; color:var(--muted); margin:12px 0 0;">Sin actividad reciente.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Módulos rápidos -->
+  <div class="panel">
+    <div class="panel-title"><i class="bi bi-grid-3x3-gap"></i> Módulos</div>
+    <div class="modules-grid">
+      <a href="{{ url_for('master.genetics') }}" class="mod-card">
+        <div class="mod-icon ic-green"><i class="bi bi-diagram-3"></i></div>
+        <div class="mod-val">{{ stats.genetics_count }}</div>
+        <div class="mod-lbl">Genéticas</div>
+      </a>
+      <a href="{{ url_for('cultivation.culs') }}" class="mod-card">
+        <div class="mod-icon ic-blue"><i class="bi bi-flower1"></i></div>
+        <div class="mod-val">{{ stats.culs_active }}</div>
+        <div class="mod-lbl">Cultivo</div>
+      </a>
+      <a href="{{ url_for('harvest.batches') }}" class="mod-card">
+        <div class="mod-icon ic-purple"><i class="bi bi-collection"></i></div>
+        <div class="mod-val">{{ stats.batches_total }}</div>
+        <div class="mod-lbl">Cosecha</div>
+      </a>
+      <a href="{{ url_for('quality.samples') }}" class="mod-card">
+        <div class="mod-icon ic-yellow"><i class="bi bi-clipboard-check"></i></div>
+        <div class="mod-val">{{ stats.samples_pending }}</div>
+        <div class="mod-lbl">Calidad</div>
+      </a>
+      <a href="{{ url_for('dispatch.orders') }}" class="mod-card">
+        <div class="mod-icon ic-gray"><i class="bi bi-truck"></i></div>
+        <div class="mod-val">{{ stats.dispatch_pending }}</div>
+        <div class="mod-lbl">Despacho</div>
+      </a>
+      <a href="{{ url_for('patients.patient_list') }}" class="mod-card">
+        <div class="mod-icon ic-red"><i class="bi bi-people"></i></div>
+        <div class="mod-val"><i class="bi bi-arrow-right" style="font-size:.85rem;"></i></div>
+        <div class="mod-lbl">Pacientes</div>
+      </a>
+    </div>
+  </div>
+
+</div>
+
+</div><!-- /dash-wrapper -->
+
+<script>
+// ── Batches por Estado ──
+(function(){
+  const labels = ['Otros','Secado','Curado','Depósito','Retenido'];
+  const data   = [{{ stats.batches_other }},{{ stats.batches_drying }},{{ stats.batches_curing }},{{ stats.batches_storage }},{{ stats.batches_retained }}];
+  const colors = ['#8b92a5','#f59e0b','#8b5cf6','#1a8fd1','#ef4444'];
+  new Chart(document.getElementById('batchesChart'),{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[{ data, backgroundColor: colors.map(c=>c+'22'), borderColor: colors, borderWidth:2, borderRadius:6, barPercentage:.6 }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, indexAxis:'y',
+      animation:{duration:700},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'#fff', titleColor:'#1c1e26', bodyColor:'#8b92a5',
+          borderColor:'#e8eaef', borderWidth:1, padding:10,
+          callbacks:{ label: ctx => ' '+ctx.parsed.x+' batch'+( ctx.parsed.x!==1?'es':'' ) }
+        }
+      },
+      scales:{
+        x:{ beginAtZero:true, ticks:{color:'#8b92a5',font:{size:10},precision:0}, grid:{color:'#f0f1f5'} },
+        y:{ ticks:{color:'#1c1e26',font:{size:11,weight:'600'}}, grid:{display:false} }
+      }
+    }
+  });
+})();
+
+// ── Stock por Estado ──
+(function(){
+  const labels = ['Otros','Secado','Curado','Depósito','Retenido'];
+  const data   = [{{ "%.2f"|format(stats.stock_other_kg) }},{{ "%.2f"|format(stats.stock_secado_kg) }},{{ "%.2f"|format(stats.stock_curado_kg) }},{{ "%.2f"|format(stats.stock_deposito_kg) }},{{ "%.2f"|format(stats.stock_retenido_kg) }}];
+  const colors = ['#8b92a5','#f59e0b','#8b5cf6','#1a8fd1','#ef4444'];
+  const hasData = data.some(v=>v>0);
+  new Chart(document.getElementById('stockDoughnut'),{
+    type:'doughnut',
+    data:{
+      labels: hasData ? labels : ['Sin datos'],
+      datasets:[{
+        data: hasData ? data : [1],
+        backgroundColor: hasData ? colors.map(c=>c+'cc') : ['#e8eaef'],
+        borderColor:'#ffffff', borderWidth:3, hoverOffset:4
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:'68%',
+      animation:{duration:700},
+      plugins:{
+        legend:{
+          position:'bottom',
+          labels:{color:'#8b92a5',font:{size:10},padding:10,usePointStyle:true,pointStyleWidth:8,boxWidth:8}
+        },
+        tooltip:{
+          backgroundColor:'#fff', titleColor:'#1c1e26', bodyColor:'#8b92a5',
+          borderColor:'#e8eaef', borderWidth:1, padding:10,
+          callbacks:{ label: ctx => ' '+ctx.parsed.toFixed(1)+' kg' }
+        }
+      }
+    }
+  });
+})();
+</script>
+{% endblock %}

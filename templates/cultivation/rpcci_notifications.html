@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Notificaciones RPCCI{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="section-title mb-0"><i class="bi bi-send"></i> Notificaciones RPCCI</h4>
+    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#newModal">+ Nueva</button>
+</div>
+<div class="card"><div class="card-body p-0">
+<table class="table table-hover mb-0">
+    <thead><tr><th>Tipo</th><th>CUL</th><th>Ticket</th><th>Estado</th><th>Enviada</th><th>Respuesta</th><th></th></tr></thead>
+    <tbody>
+    {% for n in notifications %}
+    <tr><td>{{ n.notification_type }}</td><td>{{ n.cul.code if n.cul else '-' }}</td><td>{{ n.ticket_number or '-' }}</td>
+        <td><span class="badge bg-{{ 'success' if n.status=='Aceptada' else 'info' if n.status=='Enviada' else 'danger' if n.status=='Rechazada' else 'secondary' }}">{{ n.status }}</span></td>
+        <td>{{ n.sent_at.strftime('%d/%m/%Y') if n.sent_at else '-' }}</td>
+        <td>{{ n.response_at.strftime('%d/%m/%Y') if n.response_at else '-' }}</td>
+        <td><button class="btn btn-outline-primary btn-action" data-bs-toggle="modal" data-bs-target="#upd{{ n.id }}">Actualizar</button></td></tr>
+    <div class="modal fade" id="upd{{ n.id }}"><div class="modal-dialog"><div class="modal-content">
+        <form method="POST" action="{{ url_for('cultivation.rpcci_notification_update', id=n.id) }}">
+        <div class="modal-header"><h5>Actualizar Notificación</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <div class="mb-2"><label>Estado</label><select name="status" class="form-select">{% for s in ['Pendiente','Enviada','Aceptada','Rechazada'] %}<option {{ 'selected' if n.status==s }}>{{ s }}</option>{% endfor %}</select></div>
+            <div class="mb-2"><label>Ticket</label><input type="text" name="ticket_number" class="form-control" value="{{ n.ticket_number or '' }}"></div>
+        </div>
+        <div class="modal-footer"><button type="submit" class="btn btn-success">Guardar</button></div></form>
+    </div></div></div>
+    {% endfor %}
+    </tbody>
+</table></div></div>
+<div class="modal fade" id="newModal"><div class="modal-dialog"><div class="modal-content">
+    <form method="POST" action="{{ url_for('cultivation.rpcci_notification_create') }}">
+    <div class="modal-header"><h5>Nueva Notificación RPCCI</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <div class="mb-2"><label>Tipo *</label><select name="notification_type" class="form-select">
+            <option>Alta de CUL</option><option>Baja de CUL</option><option>Inicio VG</option><option>Cierre VG</option>
+            <option>Inicio FL</option><option>Cierre FL</option><option>Inicio PC</option><option>Cierre PC</option>
+            <option>Resultados analíticos</option><option>Rendimientos</option><option>Destino final</option>
+            <option>Pérdidas/contingencias</option></select></div>
+        <div class="mb-2"><label>CUL</label><select name="cul_id" class="form-select"><option value="">--</option>{% for c in culs %}<option value="{{ c.id }}">{{ c.code }}</option>{% endfor %}</select></div>
+        <div class="mb-2"><label>Estado</label><select name="status" class="form-select"><option>Pendiente</option><option>Enviada</option></select></div>
+        <div class="mb-2"><label>Ticket</label><input type="text" name="ticket_number" class="form-control"></div>
+        <div class="mb-2"><label>Detalles</label><textarea name="details" class="form-control" rows="3"></textarea></div>
+    </div>
+    <div class="modal-footer"><button type="submit" class="btn btn-success">Crear</button></div></form>
+</div></div></div>
+{% endblock %}

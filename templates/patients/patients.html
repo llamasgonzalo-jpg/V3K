@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Pacientes{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="section-title mb-0"><i class="bi bi-people"></i> Pacientes</h4>
+    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#newModal">+ Nuevo</button>
+</div>
+<div class="card"><div class="card-body p-0">
+<table class="table table-hover mb-0">
+    <thead><tr><th>ID Interno</th><th>Organización</th><th>Estado</th><th>Vigencia</th><th></th></tr></thead>
+    <tbody>{% for p in patients %}
+    <tr><td><strong>{{ p.internal_id }}</strong></td>
+        <td>{{ p.organization or '-' }}</td>
+        <td><span class="badge bg-{{ 'success' if p.status=='Activo' else 'secondary' }}">{{ p.status }}</span></td>
+        <td>{{ p.valid_from.strftime('%d/%m/%Y') if p.valid_from else '' }} - {{ p.valid_until.strftime('%d/%m/%Y') if p.valid_until else '' }}</td>
+        <td><a href="{{ url_for('patients.patient_detail', id=p.id) }}" class="btn btn-outline-primary btn-action">Ver</a>
+            <button class="btn btn-outline-secondary btn-action" data-bs-toggle="modal" data-bs-target="#edit{{ p.id }}">Editar</button></td></tr>
+    <div class="modal fade" id="edit{{ p.id }}"><div class="modal-dialog"><div class="modal-content">
+        <form method="POST" action="{{ url_for('patients.patient_save') }}"><input type="hidden" name="patient_id" value="{{ p.id }}">
+        <div class="modal-header"><h5>Editar Paciente</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <div class="mb-2"><label>ID Interno *</label><input type="text" name="internal_id" class="form-control" value="{{ p.internal_id }}" required></div>
+            <div class="mb-2"><label>Nombre (encriptado)</label><input type="text" name="name_encrypted" class="form-control" value="{{ p.name_encrypted or '' }}"></div>
+            <div class="mb-2"><label>Organización</label><input type="text" name="organization" class="form-control" value="{{ p.organization or '' }}"></div>
+            <div class="mb-2"><label>Estado</label><select name="status" class="form-select"><option {{ 'selected' if p.status=='Activo' }}>Activo</option><option {{ 'selected' if p.status=='Inactivo' }}>Inactivo</option></select></div>
+            <div class="row"><div class="col-6 mb-2"><label>Desde</label><input type="date" name="valid_from" class="form-control" value="{{ p.valid_from.strftime('%Y-%m-%d') if p.valid_from else '' }}"></div>
+            <div class="col-6 mb-2"><label>Hasta</label><input type="date" name="valid_until" class="form-control" value="{{ p.valid_until.strftime('%Y-%m-%d') if p.valid_until else '' }}"></div></div>
+            <div class="mb-2"><label>Notas</label><textarea name="notes" class="form-control" rows="2">{{ p.notes or '' }}</textarea></div>
+        </div>
+        <div class="modal-footer"><button type="submit" class="btn btn-success">Guardar</button></div></form>
+    </div></div></div>
+    {% endfor %}</tbody>
+</table></div></div>
+<div class="modal fade" id="newModal"><div class="modal-dialog"><div class="modal-content">
+    <form method="POST" action="{{ url_for('patients.patient_save') }}">
+    <div class="modal-header"><h5>Nuevo Paciente</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <div class="mb-2"><label>ID Interno *</label><input type="text" name="internal_id" class="form-control" required></div>
+        <div class="mb-2"><label>Nombre (encriptado)</label><input type="text" name="name_encrypted" class="form-control"></div>
+        <div class="mb-2"><label>Organización</label><input type="text" name="organization" class="form-control"></div>
+        <div class="mb-2"><label>Estado</label><select name="status" class="form-select"><option>Activo</option><option>Inactivo</option></select></div>
+        <div class="row"><div class="col-6 mb-2"><label>Desde</label><input type="date" name="valid_from" class="form-control"></div>
+        <div class="col-6 mb-2"><label>Hasta</label><input type="date" name="valid_until" class="form-control"></div></div>
+        <div class="mb-2"><label>Notas</label><textarea name="notes" class="form-control" rows="2"></textarea></div>
+    </div>
+    <div class="modal-footer"><button type="submit" class="btn btn-success">Crear</button></div></form>
+</div></div></div>
+{% endblock %}

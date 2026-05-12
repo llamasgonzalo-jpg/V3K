@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Contenedores{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="section-title mb-0"><i class="bi bi-box"></i> Contenedores</h4>
+    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#newModal">+ Nuevo</button>
+</div>
+<div class="card"><div class="card-body p-0">
+<table class="table table-hover mb-0">
+    <thead><tr><th>Código</th><th>Tipo</th><th>Sector</th><th></th></tr></thead>
+    <tbody>
+    {% for c in containers %}
+    <tr><td><strong>{{ c.code }}</strong></td><td>{{ c.container_type or '-' }}</td><td>{{ c.sector.name if c.sector else '-' }}</td>
+        <td><button class="btn btn-outline-primary btn-action" data-bs-toggle="modal" data-bs-target="#edit{{ c.id }}">Editar</button></td></tr>
+    <div class="modal fade" id="edit{{ c.id }}"><div class="modal-dialog"><div class="modal-content">
+        <form method="POST" action="{{ url_for('harvest.container_save') }}"><input type="hidden" name="container_id" value="{{ c.id }}">
+        <div class="modal-header"><h5>Editar</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <div class="mb-2"><label>Código *</label><input type="text" name="code" class="form-control" value="{{ c.code }}" required></div>
+            <div class="mb-2"><label>Tipo</label><select name="container_type" class="form-select">{% for t in ['bolsa','tambor','frasco','caja'] %}<option {{ 'selected' if c.container_type==t }}>{{ t }}</option>{% endfor %}</select></div>
+            <div class="mb-2"><label>Sector</label><select name="sector_id" class="form-select"><option value="">--</option>{% for s in sectors %}<option value="{{ s.id }}" {{ 'selected' if c.sector_id==s.id }}>{{ s.name }}</option>{% endfor %}</select></div>
+        </div>
+        <div class="modal-footer"><button type="submit" class="btn btn-success">Guardar</button></div></form>
+    </div></div></div>
+    {% endfor %}
+    </tbody>
+</table></div></div>
+<div class="modal fade" id="newModal"><div class="modal-dialog"><div class="modal-content">
+    <form method="POST" action="{{ url_for('harvest.container_save') }}">
+    <div class="modal-header"><h5>Nuevo Contenedor</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <div class="mb-2"><label>Código *</label><input type="text" name="code" class="form-control" required></div>
+        <div class="mb-2"><label>Tipo</label><select name="container_type" class="form-select"><option>bolsa</option><option>tambor</option><option>frasco</option><option>caja</option></select></div>
+        <div class="mb-2"><label>Sector</label><select name="sector_id" class="form-select"><option value="">--</option>{% for s in sectors %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="modal-footer"><button type="submit" class="btn btn-success">Crear</button></div></form>
+</div></div></div>
+{% endblock %}

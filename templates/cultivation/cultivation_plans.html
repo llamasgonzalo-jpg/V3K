@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Planes de Cultivo{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="section-title mb-0"><i class="bi bi-journal-bookmark"></i> Planes de Cultivo</h4>
+    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#newModal">+ Nuevo Plan</button>
+</div>
+<div class="card"><div class="card-body p-0">
+<table class="table table-hover mb-0">
+    <thead><tr><th>Sitio</th><th>Campaña</th><th>Titular</th><th>RT</th><th>Dir. Médico</th><th>Breeding</th><th>Aprobado</th><th></th></tr></thead>
+    <tbody>
+    {% for p in plans %}
+    <tr><td>{{ p.site.name if p.site else '-' }}</td><td>{{ p.campaign.name if p.campaign else '-' }}</td>
+        <td>{{ p.holder_name or '-' }}</td><td>{{ p.responsible_tech or '-' }}</td><td>{{ p.medical_director or '-' }}</td>
+        <td>{{ 'Sí' if p.breeding_area else 'No' }}</td>
+        <td><span class="badge bg-{{ 'success' if p.approved else 'secondary' }}">{{ 'Sí' if p.approved else 'No' }}</span></td>
+        <td><button class="btn btn-outline-primary btn-action" data-bs-toggle="modal" data-bs-target="#edit{{ p.id }}">Editar</button></td></tr>
+    <div class="modal fade" id="edit{{ p.id }}"><div class="modal-dialog modal-lg"><div class="modal-content">
+        <form method="POST" action="{{ url_for('cultivation.cultivation_plan_save') }}"><input type="hidden" name="plan_id" value="{{ p.id }}">
+        <div class="modal-header"><h5>Editar Plan</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <div class="row g-2">
+                <div class="col-md-6"><label>Sitio *</label><select name="site_id" class="form-select">{% for s in sites %}<option value="{{ s.id }}" {{ 'selected' if p.site_id==s.id }}>{{ s.name }}</option>{% endfor %}</select></div>
+                <div class="col-md-6"><label>Campaña</label><select name="campaign_id" class="form-select"><option value="">--</option>{% for c in campaigns %}<option value="{{ c.id }}" {{ 'selected' if p.campaign_id==c.id }}>{{ c.name }}</option>{% endfor %}</select></div>
+            </div>
+            <div class="row g-2 mt-1">
+                <div class="col-md-4"><label>Titular</label><input type="text" name="holder_name" class="form-control" value="{{ p.holder_name or '' }}"></div>
+                <div class="col-md-4"><label>RT</label><input type="text" name="responsible_tech" class="form-control" value="{{ p.responsible_tech or '' }}"></div>
+                <div class="col-md-4"><label>Director Médico</label><input type="text" name="medical_director" class="form-control" value="{{ p.medical_director or '' }}"></div>
+            </div>
+            <div class="row g-2 mt-1">
+                <div class="col-md-6"><label>Variedades/Quimiotipos</label><textarea name="varieties" class="form-control" rows="2">{{ p.varieties or '' }}</textarea></div>
+                <div class="col-md-6"><label>Bioseguridad</label><textarea name="biosecurity_notes" class="form-control" rows="2">{{ p.biosecurity_notes or '' }}</textarea></div>
+            </div>
+            <div class="form-check mt-2"><input type="checkbox" name="breeding_area" class="form-check-input" {{ 'checked' if p.breeding_area }}><label class="form-check-label">Área de fitomejoramiento aislada</label></div>
+        </div>
+        <div class="modal-footer"><button type="submit" class="btn btn-success">Guardar</button></div></form>
+    </div></div></div>
+    {% endfor %}
+    </tbody>
+</table></div></div>
+<div class="modal fade" id="newModal"><div class="modal-dialog modal-lg"><div class="modal-content">
+    <form method="POST" action="{{ url_for('cultivation.cultivation_plan_save') }}">
+    <div class="modal-header"><h5>Nuevo Plan de Cultivo</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <div class="row g-2">
+            <div class="col-md-6"><label>Sitio *</label><select name="site_id" class="form-select" required>{% for s in sites %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select></div>
+            <div class="col-md-6"><label>Campaña</label><select name="campaign_id" class="form-select"><option value="">--</option>{% for c in campaigns %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select></div>
+        </div>
+        <div class="row g-2 mt-1">
+            <div class="col-md-4"><label>Titular</label><input type="text" name="holder_name" class="form-control"></div>
+            <div class="col-md-4"><label>RT</label><input type="text" name="responsible_tech" class="form-control"></div>
+            <div class="col-md-4"><label>Director Médico</label><input type="text" name="medical_director" class="form-control"></div>
+        </div>
+        <div class="row g-2 mt-1">
+            <div class="col-md-6"><label>Variedades/Quimiotipos</label><textarea name="varieties" class="form-control" rows="2"></textarea></div>
+            <div class="col-md-6"><label>Bioseguridad</label><textarea name="biosecurity_notes" class="form-control" rows="2"></textarea></div>
+        </div>
+        <div class="form-check mt-2"><input type="checkbox" name="breeding_area" class="form-check-input"><label class="form-check-label">Área de fitomejoramiento aislada</label></div>
+    </div>
+    <div class="modal-footer"><button type="submit" class="btn btn-success">Crear</button></div></form>
+</div></div></div>
+{% endblock %}
