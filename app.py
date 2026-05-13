@@ -51,7 +51,13 @@ def create_app():
         if current_user.is_authenticated:
             unread = Notification.query.filter_by(user_id=current_user.id, is_read=False).count()
             is_inspector = bool(current_user.role and current_user.role.name == 'Auditor/Inspector')
-        return dict(unread_notifications=unread, now=datetime.now(timezone.utc), is_inspector=is_inspector)
+        # Hora Buenos Aires (UTC-3)
+        baires = datetime.now(timezone.utc) - timedelta(hours=3)
+        dias = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo']
+        meses = ['enero','febrero','marzo','abril','mayo','junio',
+                 'julio','agosto','septiembre','octubre','noviembre','diciembre']
+        fecha_baires = f"{dias[baires.weekday()]} {baires.day} de {meses[baires.month-1]}, {baires.year}"
+        return dict(unread_notifications=unread, now=baires, fecha_hoy=fecha_baires, is_inspector=is_inspector)
 
     # Register blueprints
     from blueprints.auth import auth_bp

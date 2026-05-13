@@ -11,7 +11,7 @@
 <div class="dash-header">
   <div class="dash-greeting">
     <h1>Bienvenido, {{ current_user.full_name.split()[0] if current_user.full_name else current_user.username }}</h1>
-    <p>{{ now.strftime('%A %d de %B, %Y') | capitalize }} &nbsp;·&nbsp; Sistema Trazabilidad Res. 709</p>
+    <p>{{ fecha_hoy }} &nbsp;·&nbsp; Sistema Trazabilidad Res. 709</p>
   </div>
   <div class="dash-header-actions">
     <div class="dash-search d-flex gap-1">
