@@ -90,11 +90,9 @@ def create_app():
     @app.route('/')
     def index():
         if current_user.is_authenticated:
-            # Si es cultivador REPROCANN, redirigir a su panel
-            if current_user.role and current_user.role.name == 'Cultivador REPROCANN':
-                return redirect(url_for('reprocann.dashboard'))
-            return redirect(url_for('main.dashboard'))
-        return redirect(url_for('auth.login'))
+            return redirect(url_for('reprocann.post_login_redirect'))
+        # Sin sesión → landing pública de V3K Network
+        return redirect(url_for('reprocann.home'))
 
     from flask import Blueprint
     main_bp = Blueprint('main', __name__)

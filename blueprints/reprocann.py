@@ -80,12 +80,21 @@ def home():
 
 # ── Autoregistro ──────────────────────────────────────────────
 
+PROFILE_ROLE_MAP = {
+    'cultivador_reprocann': 'Cultivador REPROCANN',
+    'ong':                  'ONG',
+    'fitomejorador':        'Fitomejorador',
+    'empresa':              'Empresa',
+    'laboratorio':          'Laboratorio',
+}
+
 @reprocann_bp.route('/registro', methods=['GET', 'POST'])
 def registro():
     if current_user.is_authenticated:
-        return redirect(url_for('reprocann.dashboard'))
+        return redirect(url_for('reprocann.post_login_redirect'))
 
     if request.method == 'POST':
+        profile_type_code = request.form.get('profile_type', '').strip()
         email = request.form['email'].strip().lower()
         username = request.form['username'].strip()
         password = request.form['password']
@@ -95,10 +104,12 @@ def registro():
         phone = request.form.get('phone', '').strip()
         province = request.form.get('province', '').strip()
         city = request.form.get('city', '').strip()
-        reprocann_number = request.form.get('reprocann_number', '').strip()
         accepted_terms = request.form.get('accepted_terms') == 'on'
 
         # Validaciones
+        if profile_type_code not in PROFILE_ROLE_MAP:
+            flash('Tipo de perfil inválido.', 'danger')
+            return redirect(url_for('reprocann.registro'))
         if not accepted_terms:
             flash('Debés aceptar los términos y condiciones.', 'danger')
             return redirect(url_for('reprocann.registro'))
@@ -115,12 +126,13 @@ def registro():
             flash('Ese nombre de usuario ya está en uso.', 'danger')
             return redirect(url_for('reprocann.registro'))
 
-        # Buscar/crear rol "Cultivador REPROCANN"
-        role = Role.query.filter_by(name='Cultivador REPROCANN').first()
+        # Crear/obtener rol según el tipo de perfil
+        role_name = PROFILE_ROLE_MAP[profile_type_code]
+        role = Role.query.filter_by(name=role_name).first()
         if not role:
-            role = Role(name='Cultivador REPROCANN',
-                        description='Usuario auto-registrado de V3K Network',
-                        permissions='reprocann')
+            role = Role(name=role_name,
+                        description=f'Usuario auto-registrado de V3K Network ({role_name})',
+                        permissions=profile_type_code)
             db.session.add(role)
             db.session.flush()
 
@@ -131,22 +143,54 @@ def registro():
         db.session.add(u)
         db.session.flush()
 
-        # Tipo de perfil
-        pt = ProfileType.query.filter_by(code='cultivador_reprocann').first()
+        pt = ProfileType.query.filter_by(code=profile_type_code).first()
 
-        # Crear perfil
+        # Crear perfil con campos específicos según tipo
+        extra_bio_parts = []
+        if profile_type_code == 'cultivador_reprocann':
+            reprocann_number = request.form.get('reprocann_number', '').strip()
+            doctor_name = request.form.get('doctor_name', '').strip()
+            profile_kwargs = dict(reprocann_number=reprocann_number, doctor_name=doctor_name)
+        elif profile_type_code == 'ong':
+            if request.form.get('ong_personeria'):
+                extra_bio_parts.append(f"Personería jurídica: {request.form['ong_personeria']}")
+            if request.form.get('ong_pacientes'):
+                extra_bio_parts.append(f"Pacientes estimados: {request.form['ong_pacientes']}")
+            profile_kwargs = {}
+        elif profile_type_code == 'fitomejorador':
+            if request.form.get('inase_matricula'):
+                extra_bio_parts.append(f"Matrícula INASE: {request.form['inase_matricula']}")
+            if request.form.get('spig_code'):
+                extra_bio_parts.append(f"SPIG-BCP: {request.form['spig_code']}")
+            profile_kwargs = {}
+        elif profile_type_code == 'empresa':
+            if request.form.get('ariccame'):
+                extra_bio_parts.append(f"ARICCAME: {request.form['ariccame']}")
+            if request.form.get('iname'):
+                extra_bio_parts.append(f"INAME: {request.form['iname']}")
+            profile_kwargs = {}
+        elif profile_type_code == 'laboratorio':
+            if request.form.get('lab_habilitacion'):
+                extra_bio_parts.append(f"Habilitación: {request.form['lab_habilitacion']}")
+            if request.form.get('lab_iso'):
+                extra_bio_parts.append(f"ISO 17025: {request.form['lab_iso']}")
+            profile_kwargs = {}
+        else:
+            profile_kwargs = {}
+
         profile = UserProfile(
             user_id=u.id, profile_type_id=pt.id if pt else None,
             dni=dni, phone=phone, province=province, city=city,
-            reprocann_number=reprocann_number,
+            bio=' | '.join(extra_bio_parts) if extra_bio_parts else None,
             verification_status='pending',
             profile_visibility='private',
             accepted_terms=True,
-            accepted_terms_at=utcnow()
+            accepted_terms_at=utcnow(),
+            **profile_kwargs
         )
         db.session.add(profile)
 
-        # Crear suscripción en estado pending
+        # Suscripción en pending
         sub = Subscription(
             user_id=u.id, profile_type_id=pt.id if pt else None,
             status='pending'
@@ -156,23 +200,51 @@ def registro():
         # Audit
         db.session.add(AuditLog(
             user_id=u.id, action='SIGNUP', entity_type='User', entity_id=u.id,
-            details=f'Autoregistro V3K Network: {email}',
+            details=f'Autoregistro V3K Network [{profile_type_code}]: {email}',
             ip_address=request.remote_addr
         ))
 
         db.session.commit()
         login_user(u)
-        flash('¡Bienvenido a V3K Network! Completá tu perfil y cargá la documentación para verificarte.', 'success')
-        return redirect(url_for('reprocann.perfil'))
+        flash(f'¡Bienvenido a V3K Network! Completá tu perfil y cargá la documentación para verificar tu cuenta de {pt.name if pt else "usuario"}.', 'success')
+        return redirect(url_for('reprocann.post_login_redirect'))
 
     return render_template('reprocann/registro.html')
+
+# ── Post-login: enrutar al panel correcto según tipo de perfil ─
+
+@reprocann_bp.route('/inicio')
+@login_required
+def post_login_redirect():
+    """Decide a qué panel mandar al usuario según su perfil."""
+    # Admin → panel industrial (Empresa)
+    if current_user.role and current_user.role.name == 'Administrador':
+        return redirect(url_for('main.dashboard'))
+    profile = UserProfile.query.filter_by(user_id=current_user.id).first()
+    if not profile or not profile.profile_type:
+        return redirect(url_for('reprocann.perfil'))
+    code = profile.profile_type.code
+    if code == 'cultivador_reprocann':
+        return redirect(url_for('reprocann.dashboard'))
+    if code == 'moderador_v3k':
+        return redirect(url_for('reprocann.moderacion'))
+    if code == 'empresa':
+        return redirect(url_for('main.dashboard'))
+    # ONG / Fitomejorador / Laboratorio → panel placeholder
+    return redirect(url_for('reprocann.proximamente', tipo=code))
+
+@reprocann_bp.route('/proximamente/<tipo>')
+@login_required
+def proximamente(tipo):
+    pt = ProfileType.query.filter_by(code=tipo).first()
+    return render_template('reprocann/proximamente.html', profile_type=pt)
 
 # ── Login propio (puede usar el principal también) ────────────
 
 @reprocann_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('reprocann.dashboard'))
+        return redirect(url_for('reprocann.post_login_redirect'))
     if request.method == 'POST':
         ident = request.form['username'].strip()
         password = request.form['password']
@@ -181,7 +253,7 @@ def login():
             login_user(u)
             u.last_login = utcnow()
             db.session.commit()
-            return redirect(url_for('reprocann.dashboard'))
+            return redirect(url_for('reprocann.post_login_redirect'))
         flash('Credenciales inválidas.', 'danger')
     return render_template('reprocann/login.html')
 

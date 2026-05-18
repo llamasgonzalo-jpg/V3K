@@ -1,0 +1,85 @@
+{% extends "reprocann/_base.html" %}
+{% block title %}Próximamente — {{ profile_type.name if profile_type else 'V3K Network' }}{% endblock %}
+{% block content %}
+
+<div style="text-align:center; padding:60px 20px; max-width:700px; margin:0 auto;">
+
+    {% if profile_type %}
+    <div style="width:80px; height:80px; border-radius:50%; background:var(--nw-accent-lt); color:var(--nw-accent);
+                display:inline-flex; align-items:center; justify-content:center; font-size:2.4rem; margin-bottom:24px;">
+        <i class="bi {{ profile_type.icon or 'bi-hourglass-split' }}"></i>
+    </div>
+    {% endif %}
+
+    <h1 style="font-size:1.8rem; font-weight:800; color:var(--nw-text); margin-bottom:8px;">
+        Bienvenido a V3K Network
+    </h1>
+    {% if profile_type %}
+    <p style="font-size:1.05rem; color:var(--nw-accent); font-weight:600; margin-bottom:18px;">
+        Perfil: {{ profile_type.name }}
+    </p>
+    {% endif %}
+
+    <div class="nw-alert nw-alert-info" style="text-align:left; margin:20px 0;">
+        <i class="bi bi-info-circle"></i>
+        <div>
+            <strong>Tu panel especializado está en construcción.</strong><br>
+            Estamos terminando las funcionalidades específicas para tu tipo de perfil.
+            Mientras tanto podés completar tu perfil y cargar la documentación para verificarte.
+        </div>
+    </div>
+
+    {% if profile_type and profile_type.code == 'ong' %}
+    <div class="nw-card" style="text-align:left;">
+        <h3 class="nw-card-title"><i class="bi bi-people-fill icon"></i> Lo que vas a tener próximamente</h3>
+        <ul style="font-size:.9rem; color:var(--nw-text); line-height:1.8;">
+            <li>Gestión de pacientes asociados a la ONG</li>
+            <li>Trazabilidad colectiva multi-cultivador</li>
+            <li>Reportes ARICCAME + Ministerio de Salud</li>
+            <li>Calendario de eventos / talleres</li>
+            <li>Repositorio de documentación legal compartida</li>
+            <li>Sub-cuentas para los pacientes asociados</li>
+        </ul>
+    </div>
+    {% elif profile_type and profile_type.code == 'fitomejorador' %}
+    <div class="nw-card" style="text-align:left;">
+        <h3 class="nw-card-title"><i class="bi bi-diagram-3 icon"></i> Lo que vas a tener próximamente</h3>
+        <ul style="font-size:.9rem; color:var(--nw-text); line-height:1.8;">
+            <li>Registro y trazabilidad de líneas genéticas</li>
+            <li>Catálogo público de variedades (con SPIG-BCP)</li>
+            <li>Gestión de banco de germoplasma</li>
+            <li>Documentación INASE automatizada</li>
+            <li>Marketplace de semillas (próximamente)</li>
+        </ul>
+    </div>
+    {% elif profile_type and profile_type.code == 'laboratorio' %}
+    <div class="nw-card" style="text-align:left;">
+        <h3 class="nw-card-title"><i class="bi bi-droplet icon"></i> Lo que vas a tener próximamente</h3>
+        <ul style="font-size:.9rem; color:var(--nw-text); line-height:1.8;">
+            <li>Recepción y custodia de muestras</li>
+            <li>Carga de resultados analíticos</li>
+            <li>Emisión de certificados con firma digital</li>
+            <li>Integración con cultivadores y empresas</li>
+            <li>Historial de análisis por muestra</li>
+        </ul>
+    </div>
+    {% elif profile_type and profile_type.code == 'empresa' %}
+    <div class="nw-card" style="text-align:left;">
+        <h3 class="nw-card-title"><i class="bi bi-building icon"></i> Sistema industrial disponible</h3>
+        <p style="font-size:.9rem;">
+            Ya podés acceder al sistema completo de trazabilidad industrial.
+        </p>
+        <a href="{{ url_for('main.dashboard') }}" class="nw-btn nw-btn-primary">
+            Ir al sistema industrial <i class="bi bi-arrow-right"></i>
+        </a>
+    </div>
+    {% endif %}
+
+    <div style="margin-top:24px;">
+        <a href="{{ url_for('reprocann.perfil') }}" class="nw-btn nw-btn-primary">
+            <i class="bi bi-person-gear"></i> Completar mi perfil
+        </a>
+    </div>
+</div>
+
+{% endblock %}

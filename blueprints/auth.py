@@ -10,15 +10,15 @@ def utcnow():
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
-    if current_user.is_authenticated:
-        return redirect(url_for('main.dashboard'))
+    """Redirección al login unificado de V3K Network."""
+    # Mantener compatibilidad con el endpoint pero unificar todo en /network/login
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '')
         user = User.query.filter((User.username == username) | (User.email == username)).first()
         if user and user.is_locked():
             flash('Cuenta bloqueada temporalmente. Intente más tarde.', 'danger')
-            return render_template('login.html')
+            return redirect(url_for('reprocann.login'))
         if user and user.is_active and user.check_password(password):
             user.failed_attempts = 0
             user.last_login = utcnow()
@@ -28,7 +28,7 @@ def login():
             db.session.add(AuditLog(user_id=user.id, action='LOGIN', details='Inicio de sesión exitoso', ip_address=request.remote_addr))
             db.session.commit()
             next_page = request.args.get('next')
-            return redirect(next_page or url_for('main.dashboard'))
+            return redirect(next_page or url_for('reprocann.post_login_redirect'))
         if user:
             user.failed_attempts = (user.failed_attempts or 0) + 1
             max_attempts = current_app.config.get('MAX_LOGIN_ATTEMPTS', 5)
@@ -38,7 +38,9 @@ def login():
                 db.session.add(AuditLog(user_id=user.id, action='LOCKOUT', details=f'Cuenta bloqueada tras {max_attempts} intentos', ip_address=request.remote_addr))
             db.session.commit()
         flash('Credenciales inválidas.', 'danger')
-    return render_template('login.html')
+        return redirect(url_for('reprocann.login'))
+    # GET → redirigir al login unificado de V3K Network
+    return redirect(url_for('reprocann.login'))
 
 @auth_bp.route('/logout')
 @login_required
@@ -47,7 +49,7 @@ def logout():
     db.session.commit()
     logout_user()
     flash('Sesión cerrada correctamente.', 'info')
-    return redirect(url_for('auth.login'))
+    return redirect(url_for('reprocann.home'))
 
 @auth_bp.route('/password-reset', methods=['GET', 'POST'])
 def password_reset():

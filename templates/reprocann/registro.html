@@ -10,13 +10,13 @@
 </head>
 <body class="network">
 
-<div class="nw-auth-wrap">
-<div class="nw-auth-card" style="max-width:560px;">
+<div class="nw-auth-wrap" style="padding-top:24px; padding-bottom:24px; min-height:auto;">
+<div class="nw-auth-card" style="max-width:640px;">
     <div class="nw-auth-logo">
         <a href="{{ url_for('reprocann.home') }}"><img src="{{ url_for('static', filename='img/v3k-network-logo.png') }}" alt="V3K Network"></a>
     </div>
-    <h1 class="nw-auth-title">Crear cuenta de cultivador</h1>
-    <p class="nw-auth-sub">REPROCANN · $5.000/mes después del período de prueba</p>
+    <h1 class="nw-auth-title">Crear cuenta</h1>
+    <p class="nw-auth-sub">Elegí tu tipo de perfil y completá tus datos</p>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}{% for cat, msg in messages %}
@@ -24,28 +24,44 @@
     {% endfor %}{% endif %}{% endwith %}
 
     <form method="POST">
+
+        {# ── 1. Tipo de perfil ── #}
+        <div class="nw-form-group">
+            <label class="nw-label" style="font-size:.92rem; color:var(--nw-accent);">¿Qué tipo de cuenta querés crear? *</label>
+            <select name="profile_type" id="profile_type" class="nw-select" required onchange="showProfileFields()">
+                <option value="">Seleccionar tipo de perfil</option>
+                <option value="cultivador_reprocann">🌱 Cultivador REPROCANN — $5.000/mes</option>
+                <option value="ong">🤝 ONG / Asociación civil — $20.000/mes</option>
+                <option value="fitomejorador">🧬 Fitomejorador (INASE) — $50.000/mes</option>
+                <option value="empresa">🏭 Empresa habilitada (ARICCAME) — $50.000/mes</option>
+                <option value="laboratorio">🔬 Laboratorio — $50.000/mes</option>
+            </select>
+            <p class="nw-help" id="profile-description"></p>
+        </div>
+
+        <hr style="margin:20px 0;">
+
+        {# ── 2. Datos comunes a todos los perfiles ── #}
+        <h4 style="font-size:.92rem; font-weight:700; color:var(--nw-accent); margin-bottom:14px;">
+            <i class="bi bi-person-circle"></i> Datos generales
+        </h4>
         <div class="row">
             <div class="col-md-6 nw-form-group">
-                <label class="nw-label">Nombre completo *</label>
+                <label class="nw-label">Nombre completo / Razón social *</label>
                 <input type="text" name="full_name" class="nw-input" required>
             </div>
             <div class="col-md-6 nw-form-group">
-                <label class="nw-label">DNI</label>
-                <input type="text" name="dni" class="nw-input" placeholder="00.000.000">
+                <label class="nw-label" id="lbl-doc">DNI / CUIT *</label>
+                <input type="text" name="dni" class="nw-input" required>
             </div>
-        </div>
-        <div class="row">
             <div class="col-md-6 nw-form-group">
                 <label class="nw-label">Usuario *</label>
                 <input type="text" name="username" class="nw-input" required pattern="[a-zA-Z0-9_]+">
-                <p class="nw-help">Solo letras, números y guión bajo.</p>
             </div>
             <div class="col-md-6 nw-form-group">
                 <label class="nw-label">Email *</label>
                 <input type="email" name="email" class="nw-input" required>
             </div>
-        </div>
-        <div class="row">
             <div class="col-md-6 nw-form-group">
                 <label class="nw-label">Contraseña *</label>
                 <input type="password" name="password" class="nw-input" required minlength="6">
@@ -54,9 +70,11 @@
                 <label class="nw-label">Repetir contraseña *</label>
                 <input type="password" name="password2" class="nw-input" required minlength="6">
             </div>
-        </div>
-        <div class="row">
-            <div class="col-md-6 nw-form-group">
+            <div class="col-md-4 nw-form-group">
+                <label class="nw-label">Teléfono</label>
+                <input type="text" name="phone" class="nw-input" placeholder="+54 9...">
+            </div>
+            <div class="col-md-4 nw-form-group">
                 <label class="nw-label">Provincia</label>
                 <select name="province" class="nw-select">
                     <option value="">Seleccionar</option>
@@ -65,26 +83,111 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-6 nw-form-group">
-                <label class="nw-label">Ciudad / localidad</label>
+            <div class="col-md-4 nw-form-group">
+                <label class="nw-label">Ciudad</label>
                 <input type="text" name="city" class="nw-input">
             </div>
         </div>
-        <div class="row">
-            <div class="col-md-6 nw-form-group">
-                <label class="nw-label">Teléfono</label>
-                <input type="text" name="phone" class="nw-input" placeholder="+54 9...">
-            </div>
-            <div class="col-md-6 nw-form-group">
-                <label class="nw-label">Nº REPROCANN</label>
-                <input type="text" name="reprocann_number" class="nw-input">
-                <p class="nw-help">Lo podés completar después.</p>
+
+        {# ── 3. Campos específicos por tipo de perfil ── #}
+
+        {# REPROCANN #}
+        <div id="fields-cultivador_reprocann" class="profile-fields" style="display:none;">
+            <hr style="margin:20px 0;">
+            <h4 style="font-size:.92rem; font-weight:700; color:var(--nw-green); margin-bottom:14px;">
+                🌱 Datos de cultivador REPROCANN
+            </h4>
+            <div class="row">
+                <div class="col-md-6 nw-form-group">
+                    <label class="nw-label">Nº REPROCANN</label>
+                    <input type="text" name="reprocann_number" class="nw-input">
+                </div>
+                <div class="col-md-6 nw-form-group">
+                    <label class="nw-label">Médico tratante</label>
+                    <input type="text" name="doctor_name" class="nw-input">
+                </div>
             </div>
         </div>
+
+        {# ONG #}
+        <div id="fields-ong" class="profile-fields" style="display:none;">
+            <hr style="margin:20px 0;">
+            <h4 style="font-size:.92rem; font-weight:700; color:var(--nw-accent); margin-bottom:14px;">
+                🤝 Datos de la ONG
+            </h4>
+            <div class="row">
+                <div class="col-md-6 nw-form-group">
+                    <label class="nw-label">Nº de personería jurídica</label>
+                    <input type="text" name="ong_personeria" class="nw-input">
+                </div>
+                <div class="col-md-6 nw-form-group">
+                    <label class="nw-label">Cantidad estimada de pacientes</label>
+                    <input type="number" name="ong_pacientes" class="nw-input" min="0">
+                </div>
+            </div>
+        </div>
+
+        {# Fitomejorador #}
+        <div id="fields-fitomejorador" class="profile-fields" style="display:none;">
+            <hr style="margin:20px 0;">
+            <h4 style="font-size:.92rem; font-weight:700; color:var(--nw-purple); margin-bottom:14px;">
+                🧬 Datos del fitomejorador
+            </h4>
+            <div class="row">
+                <div class="col-md-6 nw-form-group">
+                    <label class="nw-label">Matrícula INASE</label>
+                    <input type="text" name="inase_matricula" class="nw-input">
+                </div>
+                <div class="col-md-6 nw-form-group">
+                    <label class="nw-label">Código SPIG-BCP (si tiene)</label>
+                    <input type="text" name="spig_code" class="nw-input">
+                </div>
+            </div>
+        </div>
+
+        {# Empresa #}
+        <div id="fields-empresa" class="profile-fields" style="display:none;">
+            <hr style="margin:20px 0;">
+            <h4 style="font-size:.92rem; font-weight:700; color:var(--nw-yellow); margin-bottom:14px;">
+                🏭 Datos de la empresa
+            </h4>
+            <div class="row">
+                <div class="col-md-6 nw-form-group">
+                    <label class="nw-label">Habilitación ARICCAME</label>
+                    <input type="text" name="ariccame" class="nw-input">
+                </div>
+                <div class="col-md-6 nw-form-group">
+                    <label class="nw-label">Habilitación INAME (si tiene)</label>
+                    <input type="text" name="iname" class="nw-input">
+                </div>
+            </div>
+        </div>
+
+        {# Laboratorio #}
+        <div id="fields-laboratorio" class="profile-fields" style="display:none;">
+            <hr style="margin:20px 0;">
+            <h4 style="font-size:.92rem; font-weight:700; color:var(--nw-red); margin-bottom:14px;">
+                🔬 Datos del laboratorio
+            </h4>
+            <div class="row">
+                <div class="col-md-6 nw-form-group">
+                    <label class="nw-label">Habilitación INAME / ANMAT</label>
+                    <input type="text" name="lab_habilitacion" class="nw-input">
+                </div>
+                <div class="col-md-6 nw-form-group">
+                    <label class="nw-label">Acreditación ISO 17025 (si tiene)</label>
+                    <input type="text" name="lab_iso" class="nw-input">
+                </div>
+            </div>
+        </div>
+
+        <hr style="margin:20px 0;">
+
+        {# ── 4. Términos ── #}
         <div class="nw-form-group">
             <label style="display:flex; gap:8px; align-items:flex-start; font-size:.85rem; color:var(--nw-text); cursor:pointer;">
                 <input type="checkbox" name="accepted_terms" required style="margin-top:3px;">
-                <span>Acepto los <a href="#" style="color:var(--nw-accent);">términos y condiciones</a> y la política de privacidad de V3K Network. Confirmo ser mayor de edad y estar inscripto al REPROCANN.</span>
+                <span>Acepto los <a href="#" style="color:var(--nw-accent);">términos y condiciones</a> y la política de privacidad de V3K Network. Confirmo ser mayor de edad y declaro que toda la información cargada es verdadera.</span>
             </label>
         </div>
         <button type="submit" class="nw-btn nw-btn-primary nw-btn-block" style="padding:12px;">
@@ -95,6 +198,36 @@
     <p class="nw-auth-foot">¿Ya tenés cuenta? <a href="{{ url_for('reprocann.login') }}">Ingresá acá</a></p>
 </div>
 </div>
+
+<script>
+const descriptions = {
+    'cultivador_reprocann': 'Para autocultivadores con inscripción al REPROCANN. Hasta 9 plantas activas. Reporte legal automático.',
+    'ong': 'Para asociaciones civiles que asisten pacientes con cannabis medicinal. Gestión de pacientes y trazabilidad colectiva.',
+    'fitomejorador': 'Para mejoradores genéticos matriculados en INASE. Registro de variedades, banco de germoplasma.',
+    'empresa': 'Para empresas habilitadas por ARICCAME. Trazabilidad industrial completa con cumplimiento Res. 709.',
+    'laboratorio': 'Para laboratorios habilitados INAME/ANMAT. Gestión de muestras y emisión de certificados.',
+};
+const docLabels = {
+    'cultivador_reprocann': 'DNI *',
+    'ong':           'CUIT *',
+    'fitomejorador': 'DNI / CUIT *',
+    'empresa':       'CUIT *',
+    'laboratorio':   'CUIT *',
+};
+
+function showProfileFields() {
+    const sel = document.getElementById('profile_type').value;
+    document.querySelectorAll('.profile-fields').forEach(el => el.style.display = 'none');
+    if (sel) {
+        const target = document.getElementById('fields-' + sel);
+        if (target) target.style.display = 'block';
+        document.getElementById('profile-description').innerText = descriptions[sel] || '';
+        document.getElementById('lbl-doc').innerText = docLabels[sel] || 'DNI / CUIT *';
+    } else {
+        document.getElementById('profile-description').innerText = '';
+    }
+}
+</script>
 
 </body>
 </html>
