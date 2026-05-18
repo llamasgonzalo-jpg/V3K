@@ -361,11 +361,18 @@ def uploaded_file(filename):
     profile = UserProfile.query.filter_by(user_id=current_user.id).first()
     is_mod = profile and profile.profile_type and profile.profile_type.code == 'moderador_v3k'
     is_admin = current_user.role and current_user.role.name == 'Administrador'
-    parts = filename.replace('\\', '/').split('/')
+    # Normalizar separadores (Windows → Linux)
+    filename = filename.replace('\\', '/')
+    parts = filename.split('/')
     if len(parts) >= 2 and parts[0] == 'reprocann':
         owner_id = int(parts[1]) if parts[1].isdigit() else None
         if owner_id != current_user.id and not (is_mod or is_admin):
             abort(403)
+    import pathlib
+    full_path = pathlib.Path(current_app.config['UPLOAD_FOLDER']) / filename
+    if not full_path.exists():
+        flash('El archivo no está disponible. El servidor fue actualizado y los archivos anteriores se perdieron. Pedile al usuario que vuelva a subir el documento.', 'warning')
+        return redirect(request.referrer or url_for('reprocann.moderacion'))
     return send_from_directory(current_app.config['UPLOAD_FOLDER'], filename)
 
 # ── Cultivos: listado y creación ──────────────────────────────
