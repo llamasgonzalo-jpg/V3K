@@ -135,6 +135,17 @@
                         <i class="bi bi-people"></i> Pacientes
                     </a>
                 </li>
+                {% if current_user.role and current_user.role.name == 'Administrador' %}
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                        <i class="bi bi-globe2"></i> V3K Network
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('reprocann.moderacion') }}">Panel de moderación</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('reprocann.home') }}" target="_blank">Ver landing pública</a></li>
+                    </ul>
+                </li>
+                {% endif %}
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
                         <i class="bi bi-graph-up"></i> Reportes

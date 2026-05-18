@@ -16,7 +16,12 @@
     <a href="{{ url_for('reprocann.dashboard') }}" class="nw-nav-brand">
         <img src="{{ url_for('static', filename='img/v3k-network-logo.png') }}" alt="V3K Network">
     </a>
+    {% set is_admin = current_user.role and current_user.role.name == 'Administrador' %}
+    {% set user_profile = current_user.profile if current_user.profile else none %}
+    {% set is_moderator = user_profile and user_profile.profile_type and user_profile.profile_type.code == 'moderador_v3k' %}
+    {% set is_cultivador = user_profile and user_profile.profile_type and user_profile.profile_type.code == 'cultivador_reprocann' %}
     <div class="nw-nav-links">
+        {% if is_cultivador %}
         <a href="{{ url_for('reprocann.dashboard') }}" class="nw-nav-link {% if active=='dashboard' %}active{% endif %}">
             <i class="bi bi-house"></i> Inicio
         </a>
@@ -26,11 +31,16 @@
         <a href="{{ url_for('reprocann.reporte_rpcci') }}" class="nw-nav-link {% if active=='reporte' %}active{% endif %}">
             <i class="bi bi-file-earmark-text"></i> Reporte RPCCI
         </a>
-        {% set user_profile = current_user.profile if current_user.profile else none %}
-        {% if user_profile and user_profile.profile_type and user_profile.profile_type.code == 'moderador_v3k' or (current_user.role and current_user.role.name == 'Administrador') %}
+        {% endif %}
+        {% if is_admin or is_moderator %}
         <a href="{{ url_for('reprocann.moderacion') }}" class="nw-nav-link {% if active=='moderacion' %}active{% endif %}">
             <i class="bi bi-shield-check"></i> Moderación
         </a>
+        {% if is_admin %}
+        <a href="{{ url_for('main.dashboard') }}" class="nw-nav-link">
+            <i class="bi bi-arrow-left"></i> Volver al sistema
+        </a>
+        {% endif %}
         {% endif %}
     </div>
     <a href="{{ url_for('reprocann.perfil') }}" class="nw-nav-user">
