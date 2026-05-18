@@ -252,6 +252,7 @@ def login():
         if u and u.check_password(password) and u.is_active:
             login_user(u)
             u.last_login = utcnow()
+            u.last_activity = utcnow()  # evita que check_session_timeout expire la sesión recién creada
             db.session.commit()
             return redirect(url_for('reprocann.post_login_redirect'))
         flash('Credenciales inválidas.', 'danger')
