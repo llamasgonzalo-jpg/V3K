@@ -1,0 +1,152 @@
+{% extends "reprocann/_base.html" %}
+{% set active = 'perfil' %}
+{% block title %}Mi perfil{% endblock %}
+{% block content %}
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+    <h1 style="font-size:1.4rem; font-weight:700; margin:0;">Mi perfil</h1>
+    <div>
+        {% if profile.verification_status == 'verified' %}
+        <span class="nw-badge nw-badge-verified"><i class="bi bi-patch-check-fill"></i> Verificado</span>
+        {% elif profile.verification_status == 'in_review' %}
+        <span class="nw-badge nw-badge-review">En revisión</span>
+        {% elif profile.verification_status == 'rejected' %}
+        <span class="nw-badge nw-badge-rejected">Rechazado</span>
+        {% else %}
+        <span class="nw-badge nw-badge-pending">Pendiente</span>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+<div class="col-lg-8">
+<div class="nw-card">
+    <h3 class="nw-card-title"><i class="bi bi-person icon"></i> Datos personales</h3>
+    <form method="POST">
+        <div class="row">
+            <div class="col-md-6 nw-form-group">
+                <label class="nw-label">Nombre completo</label>
+                <input type="text" name="full_name" class="nw-input" value="{{ current_user.full_name or '' }}">
+            </div>
+            <div class="col-md-6 nw-form-group">
+                <label class="nw-label">DNI</label>
+                <input type="text" name="dni" class="nw-input" value="{{ profile.dni or '' }}">
+            </div>
+            <div class="col-md-6 nw-form-group">
+                <label class="nw-label">Teléfono</label>
+                <input type="text" name="phone" class="nw-input" value="{{ profile.phone or '' }}">
+            </div>
+            <div class="col-md-6 nw-form-group">
+                <label class="nw-label">Fecha de nacimiento</label>
+                <input type="date" name="birth_date" class="nw-input" value="{{ profile.birth_date.strftime('%Y-%m-%d') if profile.birth_date else '' }}">
+            </div>
+            <div class="col-md-8 nw-form-group">
+                <label class="nw-label">Domicilio</label>
+                <input type="text" name="address" class="nw-input" value="{{ profile.address or '' }}">
+            </div>
+            <div class="col-md-4 nw-form-group">
+                <label class="nw-label">Código postal</label>
+                <input type="text" name="postal_code" class="nw-input" value="{{ profile.postal_code or '' }}">
+            </div>
+            <div class="col-md-6 nw-form-group">
+                <label class="nw-label">Provincia</label>
+                <select name="province" class="nw-select">
+                    <option value="">Seleccionar</option>
+                    {% for p in ['Buenos Aires','CABA','Catamarca','Chaco','Chubut','Córdoba','Corrientes','Entre Ríos','Formosa','Jujuy','La Pampa','La Rioja','Mendoza','Misiones','Neuquén','Río Negro','Salta','San Juan','San Luis','Santa Cruz','Santa Fe','Santiago del Estero','Tierra del Fuego','Tucumán'] %}
+                    <option {{ 'selected' if profile.province==p }}>{{ p }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-6 nw-form-group">
+                <label class="nw-label">Ciudad / localidad</label>
+                <input type="text" name="city" class="nw-input" value="{{ profile.city or '' }}">
+            </div>
+        </div>
+
+        <h4 style="font-size:.9rem; font-weight:700; color:var(--nw-accent); margin:18px 0 12px;">REPROCANN</h4>
+        <div class="row">
+            <div class="col-md-6 nw-form-group">
+                <label class="nw-label">Nº REPROCANN</label>
+                <input type="text" name="reprocann_number" class="nw-input" value="{{ profile.reprocann_number or '' }}">
+            </div>
+            <div class="col-md-6 nw-form-group">
+                <label class="nw-label">Vencimiento</label>
+                <input type="date" name="reprocann_expiry" class="nw-input" value="{{ profile.reprocann_expiry.strftime('%Y-%m-%d') if profile.reprocann_expiry else '' }}">
+            </div>
+            <div class="col-md-6 nw-form-group">
+                <label class="nw-label">Médico tratante</label>
+                <input type="text" name="doctor_name" class="nw-input" value="{{ profile.doctor_name or '' }}">
+            </div>
+            <div class="col-md-6 nw-form-group">
+                <label class="nw-label">Matrícula médica</label>
+                <input type="text" name="doctor_matricula" class="nw-input" value="{{ profile.doctor_matricula or '' }}">
+            </div>
+            <div class="col-12 nw-form-group">
+                <label class="nw-label">Patología / motivo de prescripción</label>
+                <input type="text" name="pathology" class="nw-input" value="{{ profile.pathology or '' }}">
+            </div>
+        </div>
+
+        <div class="nw-form-group">
+            <label class="nw-label">Bio (cómo te ves en la comunidad)</label>
+            <textarea name="bio" class="nw-textarea" rows="3">{{ profile.bio or '' }}</textarea>
+        </div>
+        <div class="nw-form-group">
+            <label class="nw-label">Visibilidad del perfil</label>
+            <select name="profile_visibility" class="nw-select">
+                <option value="private" {{ 'selected' if profile.profile_visibility=='private' }}>Privado — solo yo veo mi info</option>
+                <option value="followers" {{ 'selected' if profile.profile_visibility=='followers' }}>Solo seguidores</option>
+                <option value="public" {{ 'selected' if profile.profile_visibility=='public' }}>Público — visible en la red</option>
+            </select>
+        </div>
+
+        <button type="submit" class="nw-btn nw-btn-primary"><i class="bi bi-save"></i> Guardar cambios</button>
+    </form>
+</div>
+</div>
+
+<div class="col-lg-4">
+<div class="nw-card">
+    <h3 class="nw-card-title"><i class="bi bi-shield-check icon"></i> Verificación</h3>
+    <p style="font-size:.85rem; color:var(--nw-muted); margin-bottom:14px;">
+        Subí tu DNI (frente y dorso) y constancia REPROCANN. Un moderador validará tus documentos.
+    </p>
+
+    <form method="POST" action="{{ url_for('reprocann.upload_doc') }}" enctype="multipart/form-data" style="margin-bottom:12px;">
+        <div class="nw-form-group">
+            <label class="nw-label">Tipo de documento</label>
+            <select name="document_type" class="nw-select" required>
+                <option value="dni_frente">DNI — frente</option>
+                <option value="dni_dorso">DNI — dorso</option>
+                <option value="reprocann">Constancia REPROCANN</option>
+                <option value="receta">Receta médica</option>
+                <option value="otro">Otro</option>
+            </select>
+        </div>
+        <div class="nw-form-group">
+            <label class="nw-label">Archivo (PNG, JPG o PDF)</label>
+            <input type="file" name="file" class="nw-input" accept=".png,.jpg,.jpeg,.pdf" required>
+        </div>
+        <button class="nw-btn nw-btn-primary nw-btn-block"><i class="bi bi-upload"></i> Subir documento</button>
+    </form>
+
+    {% if docs %}
+    <h5 style="font-size:.78rem; font-weight:700; color:var(--nw-muted); text-transform:uppercase; margin-top:16px;">Documentos cargados</h5>
+    <div>
+    {% for d in docs %}
+    <div style="display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--nw-border); font-size:.82rem;">
+        <i class="bi bi-file-earmark-text" style="color:var(--nw-accent);"></i>
+        <div style="flex:1;">
+            <strong>{{ d.document_type|replace('_', ' ')|capitalize }}</strong><br>
+            <small style="color:var(--nw-muted);">{{ d.uploaded_at.strftime('%d/%m/%Y %H:%M') if d.uploaded_at else '' }}</small>
+        </div>
+        <a href="{{ url_for('reprocann.uploaded_file', filename=d.file_path) }}" target="_blank" class="nw-btn nw-btn-outline nw-btn-sm"><i class="bi bi-eye"></i></a>
+    </div>
+    {% endfor %}
+    </div>
+    {% endif %}
+</div>
+</div>
+</div>
+
+{% endblock %}

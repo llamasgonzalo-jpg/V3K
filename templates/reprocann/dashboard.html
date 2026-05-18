@@ -1,0 +1,127 @@
+{% extends "reprocann/_base.html" %}
+{% set active = 'dashboard' %}
+{% block title %}Mi panel{% endblock %}
+{% block content %}
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+    <div>
+        <h1 style="font-size:1.4rem; font-weight:700; margin:0; color:var(--nw-text);">
+            Hola, {{ current_user.full_name.split()[0] if current_user.full_name else current_user.username }}
+        </h1>
+        <p style="font-size:.85rem; color:var(--nw-muted); margin:2px 0 0;">Panel del cultivador REPROCANN</p>
+    </div>
+    <a href="{{ url_for('reprocann.cultivo_nuevo') }}" class="nw-btn nw-btn-primary">
+        <i class="bi bi-plus-lg"></i> Nuevo cultivo
+    </a>
+</div>
+
+{# Banners de estado #}
+{% if profile.verification_status != 'verified' %}
+<div class="nw-alert nw-alert-warning">
+    <i class="bi bi-shield-exclamation"></i>
+    <div style="flex:1;">
+        <strong>Verificá tu cuenta.</strong>
+        {% if profile.verification_status == 'pending' %}
+        Subí tu DNI y constancia REPROCANN en tu perfil para que un moderador apruebe tu cuenta.
+        {% elif profile.verification_status == 'in_review' %}
+        Documentación enviada — esperando aprobación de un moderador.
+        {% elif profile.verification_status == 'rejected' %}
+        Verificación rechazada: {{ profile.verification_notes or 'sin motivo registrado' }}. Volvé a subir la documentación.
+        {% endif %}
+    </div>
+    <a href="{{ url_for('reprocann.perfil') }}" class="nw-btn nw-btn-warning nw-btn-sm">Ir al perfil</a>
+</div>
+{% endif %}
+
+{% if subscription.status != 'active' %}
+<div class="nw-alert nw-alert-info">
+    <i class="bi bi-credit-card"></i>
+    <div style="flex:1;">
+        <strong>Suscripción {{ 'pendiente' if subscription.status=='pending' else 'vencida' }}.</strong>
+        Para registrar nuevos cultivos y eventos necesitás suscripción activa ($5.000/mes).
+        Un administrador la activará tras confirmar el pago.
+    </div>
+</div>
+{% else %}
+<div class="nw-alert nw-alert-success">
+    <i class="bi bi-check-circle"></i>
+    Suscripción activa hasta el <strong>{{ subscription.expires_at.strftime('%d/%m/%Y') if subscription.expires_at else '-' }}</strong>
+</div>
+{% endif %}
+
+{# KPIs #}
+<div class="nw-kpis">
+    <a href="{{ url_for('reprocann.cultivos') }}" class="nw-kpi">
+        <div class="nw-kpi-icon bg-green"><i class="bi bi-flower1"></i></div>
+        <div class="nw-kpi-value">{{ cultivos|selectattr('status','equalto','active')|list|length }}</div>
+        <div class="nw-kpi-label">Cultivos activos</div>
+        <div class="nw-kpi-sub">{{ cultivos|length }} en total</div>
+    </a>
+    <div class="nw-kpi">
+        <div class="nw-kpi-icon bg-blue"><i class="bi bi-tree"></i></div>
+        <div class="nw-kpi-value">{{ total_plants }}<small style="font-size:.65rem; color:var(--nw-muted); font-weight:500;"> / 9</small></div>
+        <div class="nw-kpi-label">Plantas activas</div>
+        <div class="nw-kpi-sub">Límite legal REPROCANN</div>
+    </div>
+    <div class="nw-kpi">
+        <div class="nw-kpi-icon bg-purple"><i class="bi bi-bag"></i></div>
+        <div class="nw-kpi-value">{{ "%.0f"|format(total_harvested) }}<small style="font-size:.65rem; color:var(--nw-muted); font-weight:500;"> g</small></div>
+        <div class="nw-kpi-label">Cosechado total</div>
+        <div class="nw-kpi-sub">peso seco acumulado</div>
+    </div>
+    <a href="{{ url_for('reprocann.reporte_rpcci') }}" class="nw-kpi">
+        <div class="nw-kpi-icon bg-yellow"><i class="bi bi-file-earmark-pdf"></i></div>
+        <div class="nw-kpi-value" style="font-size:1.05rem; padding-top:8px;">Reporte RPCCI</div>
+        <div class="nw-kpi-label">Descargar PDF</div>
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-lg-7">
+        <div class="nw-card">
+            <h3 class="nw-card-title"><i class="bi bi-flower1 icon"></i> Mis cultivos recientes</h3>
+            {% if cultivos %}
+            <div class="nw-cultivos-grid">
+                {% for c in cultivos[:4] %}
+                <a href="{{ url_for('reprocann.cultivo_detail', id=c.id) }}" class="nw-cultivo-card">
+                    <div class="nw-cultivo-name">{{ c.name }}</div>
+                    <div class="nw-cultivo-variety">{{ c.variety or 'Sin variedad asignada' }}</div>
+                    <div class="nw-cultivo-meta">
+                        <div><strong>{{ c.plant_count or 0 }}</strong><span>plantas</span></div>
+                        <div><strong style="text-transform:capitalize;">{{ c.stage or '-' }}</strong><span>etapa</span></div>
+                        <div><strong style="font-size:.85rem;">{{ c.environment or '-' }}</strong><span>ambiente</span></div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% if cultivos|length > 4 %}
+            <a href="{{ url_for('reprocann.cultivos') }}" class="nw-btn nw-btn-outline" style="margin-top:14px;">Ver todos ({{ cultivos|length }})</a>
+            {% endif %}
+            {% else %}
+            <p style="color:var(--nw-muted); font-size:.88rem;">Todavía no registraste ningún cultivo.</p>
+            <a href="{{ url_for('reprocann.cultivo_nuevo') }}" class="nw-btn nw-btn-primary">Crear el primero</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="nw-card">
+            <h3 class="nw-card-title"><i class="bi bi-clock-history icon"></i> Actividad reciente</h3>
+            {% if recent_events %}
+            <div class="nw-timeline">
+                {% for ev in recent_events %}
+                <div class="nw-tl-item {% if ev.event_type=='riego' %}green{% elif ev.event_type=='cambio_etapa' %}purple{% elif ev.event_type=='foto' %}yellow{% endif %}">
+                    <div class="nw-tl-time">{{ ev.event_date.strftime('%d/%m %H:%M') }}</div>
+                    <div class="nw-tl-title">{{ ev.title or ev.event_type|capitalize }}</div>
+                    {% if ev.description %}<div class="nw-tl-desc">{{ ev.description|truncate(80) }}</div>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p style="color:var(--nw-muted); font-size:.88rem;">Sin eventos registrados todavía.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}

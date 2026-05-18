@@ -956,3 +956,176 @@ class RetentionPolicy(db.Model):
     record_type = db.Column(db.String(80), nullable=False)
     retention_years = db.Column(db.Integer, nullable=False)
     is_active = db.Column(db.Boolean, default=True)
+
+# ═══════════════════════════════════════════════════════════════
+#  V3K NETWORK  —  Multi-tenant social platform
+# ═══════════════════════════════════════════════════════════════
+
+# ── Tipos de perfil (cultivador, ONG, fitomejorador, empresa, lab, moderador) ──
+
+class ProfileType(db.Model):
+    __tablename__ = 'profile_types'
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(50), unique=True, nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
+    monthly_price = db.Column(db.Numeric(10, 2), default=0)
+    icon = db.Column(db.String(50))
+    color = db.Column(db.String(20))
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=utcnow)
+
+# ── Perfil extendido del usuario en la Network ──
+
+class UserProfile(db.Model):
+    __tablename__ = 'user_profiles'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), unique=True, nullable=False)
+    profile_type_id = db.Column(db.Integer, db.ForeignKey('profile_types.id'))
+
+    # Datos personales
+    dni = db.Column(db.String(20))
+    phone = db.Column(db.String(50))
+    address = db.Column(db.String(255))
+    city = db.Column(db.String(100))
+    province = db.Column(db.String(100))
+    postal_code = db.Column(db.String(20))
+    birth_date = db.Column(db.Date)
+
+    # Datos REPROCANN
+    reprocann_number = db.Column(db.String(100))
+    reprocann_expiry = db.Column(db.Date)
+    doctor_name = db.Column(db.String(200))
+    doctor_matricula = db.Column(db.String(100))
+    pathology = db.Column(db.String(500))
+
+    # Bio social
+    bio = db.Column(db.Text)
+    avatar_path = db.Column(db.String(500))
+    cover_path = db.Column(db.String(500))
+
+    # Verificación
+    verification_status = db.Column(db.String(20), default='pending')  # pending, in_review, verified, rejected
+    verification_submitted_at = db.Column(db.DateTime)
+    verified_at = db.Column(db.DateTime)
+    verified_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    verification_notes = db.Column(db.Text)
+
+    # Privacidad
+    profile_visibility = db.Column(db.String(20), default='private')  # private, followers, public
+
+    # Términos
+    accepted_terms = db.Column(db.Boolean, default=False)
+    accepted_terms_at = db.Column(db.DateTime)
+
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
+
+    user = db.relationship('User', foreign_keys=[user_id], backref=db.backref('profile', uselist=False))
+    profile_type = db.relationship('ProfileType')
+
+# ── Suscripción y pagos ──
+
+class Subscription(db.Model):
+    __tablename__ = 'subscriptions'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), unique=True, nullable=False)
+    profile_type_id = db.Column(db.Integer, db.ForeignKey('profile_types.id'))
+    status = db.Column(db.String(20), default='pending')  # pending, active, expired, cancelled, trial
+    starts_at = db.Column(db.DateTime)
+    expires_at = db.Column(db.DateTime)
+    last_payment_at = db.Column(db.DateTime)
+    last_payment_amount = db.Column(db.Numeric(10, 2))
+    payment_method = db.Column(db.String(50))  # mercadopago, transferencia, manual
+    payment_reference = db.Column(db.String(255))
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
+
+    user = db.relationship('User', backref=db.backref('subscription', uselist=False))
+    profile_type = db.relationship('ProfileType')
+
+# ── Documentos cargados para verificación ──
+
+class VerificationDocument(db.Model):
+    __tablename__ = 'verification_documents'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    document_type = db.Column(db.String(50))  # dni_frente, dni_dorso, reprocann, cuit, etc.
+    file_path = db.Column(db.String(500))
+    original_filename = db.Column(db.String(255))
+    file_size = db.Column(db.Integer)
+    uploaded_at = db.Column(db.DateTime, default=utcnow)
+    notes = db.Column(db.Text)
+
+# ── Cultivos del usuario REPROCANN (independientes del módulo industrial) ──
+
+class ReprocannCultivo(db.Model):
+    __tablename__ = 'reprocann_cultivos'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+    # Datos básicos
+    name = db.Column(db.String(200), nullable=False)
+    variety = db.Column(db.String(200))
+    environment = db.Column(db.String(50))  # interior, exterior, mixto, invernadero
+    plant_count = db.Column(db.Integer, default=1)
+    stage = db.Column(db.String(50), default='vegetativo')  # propagacion, vegetativo, floracion, cosecha, secado, finalizado
+
+    # Georreferenciación
+    address = db.Column(db.String(500))
+    latitude = db.Column(db.Float)
+    longitude = db.Column(db.Float)
+    surface_m2 = db.Column(db.Float)
+
+    # Fechas
+    start_date = db.Column(db.Date)
+    expected_harvest_date = db.Column(db.Date)
+    actual_harvest_date = db.Column(db.Date)
+
+    # Privacidad
+    is_public = db.Column(db.Boolean, default=False)
+
+    # Estado
+    status = db.Column(db.String(20), default='active')  # active, harvested, archived
+
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
+
+    user = db.relationship('User', backref='reprocann_cultivos')
+    events = db.relationship('ReprocannEvent', backref='cultivo', lazy='dynamic', cascade='all, delete-orphan')
+    harvests = db.relationship('ReprocannHarvest', backref='cultivo', lazy='dynamic', cascade='all, delete-orphan')
+
+# ── Eventos del cultivo (riegos, podas, fotos, cambios de etapa) ──
+
+class ReprocannEvent(db.Model):
+    __tablename__ = 'reprocann_events'
+    id = db.Column(db.Integer, primary_key=True)
+    cultivo_id = db.Column(db.Integer, db.ForeignKey('reprocann_cultivos.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+    event_type = db.Column(db.String(50))  # riego, fertilizacion, poda, cambio_etapa, observacion, foto, trasplante
+    title = db.Column(db.String(200))
+    description = db.Column(db.Text)
+    photo_path = db.Column(db.String(500))
+
+    event_date = db.Column(db.DateTime, default=utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
+
+# ── Cosechas ──
+
+class ReprocannHarvest(db.Model):
+    __tablename__ = 'reprocann_harvests'
+    id = db.Column(db.Integer, primary_key=True)
+    cultivo_id = db.Column(db.Integer, db.ForeignKey('reprocann_cultivos.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+    harvest_date = db.Column(db.Date, nullable=False)
+    wet_weight_g = db.Column(db.Float)  # gramos en fresco
+    dry_weight_g = db.Column(db.Float)  # gramos en seco
+    purpose = db.Column(db.String(100))  # uso medicinal, aceite, infusión, etc.
+
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=utcnow)
+

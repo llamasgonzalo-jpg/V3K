@@ -1,0 +1,157 @@
+{% extends "reprocann/_base.html" %}
+{% set active = 'cultivos' %}
+{% block title %}{{ 'Editar' if cultivo else 'Nuevo' }} cultivo{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+{% endblock %}
+{% block content %}
+
+<div style="display:flex; gap:14px; margin-bottom:14px;">
+    <a href="{{ url_for('reprocann.cultivos') }}" class="nw-btn nw-btn-outline nw-btn-sm">
+        <i class="bi bi-arrow-left"></i> Volver
+    </a>
+    <h1 style="font-size:1.4rem; font-weight:700; margin:0;">{{ 'Editar' if cultivo else 'Nuevo' }} cultivo</h1>
+</div>
+
+<form method="POST">
+<div class="row">
+<div class="col-lg-7">
+<div class="nw-card">
+    <h3 class="nw-card-title"><i class="bi bi-info-circle icon"></i> Datos generales</h3>
+    <div class="row">
+        <div class="col-md-7 nw-form-group">
+            <label class="nw-label">Nombre del cultivo *</label>
+            <input type="text" name="name" class="nw-input" required value="{{ cultivo.name if cultivo else '' }}" placeholder="Ej: Indoor garage 2026">
+        </div>
+        <div class="col-md-5 nw-form-group">
+            <label class="nw-label">Variedad / genética</label>
+            <input type="text" name="variety" class="nw-input" value="{{ cultivo.variety or '' if cultivo else '' }}" placeholder="Ej: Charlotte's Web">
+        </div>
+        <div class="col-md-4 nw-form-group">
+            <label class="nw-label">Ambiente</label>
+            <select name="environment" class="nw-select">
+                {% for env in ['interior','exterior','mixto','invernadero'] %}
+                <option value="{{ env }}" {{ 'selected' if cultivo and cultivo.environment==env }}>{{ env|capitalize }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4 nw-form-group">
+            <label class="nw-label">Plantas *</label>
+            <input type="number" name="plant_count" class="nw-input" required min="1" max="9" value="{{ cultivo.plant_count or 1 if cultivo else 1 }}">
+            <p class="nw-help">Máx. 9 plantas activas en total.</p>
+        </div>
+        <div class="col-md-4 nw-form-group">
+            <label class="nw-label">Etapa actual</label>
+            <select name="stage" class="nw-select">
+                {% for s in ['propagacion','vegetativo','floracion','cosecha','secado','finalizado'] %}
+                <option value="{{ s }}" {{ 'selected' if cultivo and cultivo.stage==s }}>{{ s|capitalize }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4 nw-form-group">
+            <label class="nw-label">Fecha de inicio</label>
+            <input type="date" name="start_date" class="nw-input" value="{{ cultivo.start_date.strftime('%Y-%m-%d') if cultivo and cultivo.start_date else '' }}">
+        </div>
+        <div class="col-md-4 nw-form-group">
+            <label class="nw-label">Cosecha estimada</label>
+            <input type="date" name="expected_harvest_date" class="nw-input" value="{{ cultivo.expected_harvest_date.strftime('%Y-%m-%d') if cultivo and cultivo.expected_harvest_date else '' }}">
+        </div>
+        <div class="col-md-4 nw-form-group">
+            <label class="nw-label">Superficie (m²)</label>
+            <input type="number" step="0.01" name="surface_m2" class="nw-input" value="{{ cultivo.surface_m2 or '' if cultivo else '' }}">
+        </div>
+    </div>
+    <div class="nw-form-group">
+        <label class="nw-label">Notas</label>
+        <textarea name="notes" class="nw-textarea" rows="3">{{ cultivo.notes or '' if cultivo else '' }}</textarea>
+    </div>
+    <div class="nw-form-group">
+        <label style="display:flex; gap:8px; align-items:center; font-size:.85rem; cursor:pointer;">
+            <input type="checkbox" name="is_public" {{ 'checked' if cultivo and cultivo.is_public }}>
+            <span>Hacer este cultivo visible en la comunidad (próximamente)</span>
+        </label>
+    </div>
+</div>
+</div>
+
+<div class="col-lg-5">
+<div class="nw-card">
+    <h3 class="nw-card-title"><i class="bi bi-geo-alt icon"></i> Georreferenciación</h3>
+    <p style="font-size:.82rem; color:var(--nw-muted); margin-bottom:12px;">
+        Marcá la ubicación de tu cultivo. La dirección exacta es para el reporte RPCCI.
+        En la red social solo se mostrará la ciudad/provincia.
+    </p>
+    <div class="nw-form-group">
+        <label class="nw-label">Dirección completa</label>
+        <input type="text" id="address" name="address" class="nw-input" value="{{ cultivo.address or '' if cultivo else '' }}" placeholder="Calle, número, ciudad">
+        <p class="nw-help">Hacé click en el mapa o usá el buscador para fijar la ubicación.</p>
+    </div>
+    <div class="row">
+        <div class="col-6 nw-form-group">
+            <label class="nw-label">Latitud</label>
+            <input type="text" id="latitude" name="latitude" class="nw-input" value="{{ cultivo.latitude or '' if cultivo else '' }}" readonly>
+        </div>
+        <div class="col-6 nw-form-group">
+            <label class="nw-label">Longitud</label>
+            <input type="text" id="longitude" name="longitude" class="nw-input" value="{{ cultivo.longitude or '' if cultivo else '' }}" readonly>
+        </div>
+    </div>
+    <div id="cultivo-map"></div>
+    <button type="button" id="locate-btn" class="nw-btn nw-btn-outline nw-btn-sm" style="margin-top:8px;">
+        <i class="bi bi-crosshair"></i> Usar mi ubicación actual
+    </button>
+</div>
+</div>
+</div>
+
+<div style="display:flex; gap:10px; justify-content:flex-end; margin-top:16px;">
+    {% if cultivo %}
+    <button type="submit" formaction="{{ url_for('reprocann.cultivo_delete', id=cultivo.id) }}" formmethod="POST"
+            onclick="return confirm('¿Eliminar este cultivo? Esta acción es irreversible.')"
+            class="nw-btn nw-btn-danger" formnovalidate>
+        <i class="bi bi-trash"></i> Eliminar
+    </button>
+    {% endif %}
+    <a href="{{ url_for('reprocann.cultivos') }}" class="nw-btn nw-btn-outline">Cancelar</a>
+    <button type="submit" class="nw-btn nw-btn-primary">
+        <i class="bi bi-check-lg"></i> {{ 'Guardar cambios' if cultivo else 'Crear cultivo' }}
+    </button>
+</div>
+</form>
+
+{% endblock %}
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function(){
+    const initLat  = {{ cultivo.latitude if cultivo and cultivo.latitude else -32.8908 }};
+    const initLng  = {{ cultivo.longitude if cultivo and cultivo.longitude else -68.8272 }};
+    const hasLoc   = {{ 'true' if cultivo and cultivo.latitude else 'false' }};
+
+    const map = L.map('cultivo-map').setView([initLat, initLng], hasLoc ? 16 : 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+
+    let marker = hasLoc ? L.marker([initLat, initLng]).addTo(map) : null;
+
+    function setMarker(lat, lng) {
+        if (marker) marker.setLatLng([lat, lng]);
+        else marker = L.marker([lat, lng]).addTo(map);
+        document.getElementById('latitude').value  = lat.toFixed(6);
+        document.getElementById('longitude').value = lng.toFixed(6);
+    }
+
+    map.on('click', e => setMarker(e.latlng.lat, e.latlng.lng));
+
+    document.getElementById('locate-btn').addEventListener('click', () => {
+        if (!navigator.geolocation) return alert('Tu navegador no soporta geolocalización.');
+        navigator.geolocation.getCurrentPosition(pos => {
+            const { latitude, longitude } = pos.coords;
+            map.setView([latitude, longitude], 17);
+            setMarker(latitude, longitude);
+        }, () => alert('No se pudo obtener tu ubicación.'));
+    });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,159 @@
+{% extends "reprocann/_base.html" %}
+{% set active = 'moderacion' %}
+{% block title %}Moderar {{ u.username }}{% endblock %}
+{% block content %}
+
+<div style="display:flex; gap:14px; align-items:center; margin-bottom:14px;">
+    <a href="{{ url_for('reprocann.moderacion') }}" class="nw-btn nw-btn-outline nw-btn-sm">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <div>
+        <h1 style="font-size:1.4rem; font-weight:700; margin:0;">{{ u.username }}</h1>
+        <p style="font-size:.85rem; color:var(--nw-muted); margin:2px 0 0;">{{ u.full_name or u.email }}</p>
+    </div>
+</div>
+
+<div class="row">
+<div class="col-lg-7">
+
+<div class="nw-card">
+    <h3 class="nw-card-title"><i class="bi bi-person-vcard icon"></i> Datos del cultivador</h3>
+    <div class="row" style="font-size:.88rem;">
+        <div class="col-md-6" style="margin-bottom:8px;"><strong>Email:</strong> {{ u.email }}</div>
+        <div class="col-md-6" style="margin-bottom:8px;"><strong>DNI:</strong> {{ profile.dni or '-' if profile else '-' }}</div>
+        <div class="col-md-6" style="margin-bottom:8px;"><strong>Teléfono:</strong> {{ profile.phone or '-' if profile else '-' }}</div>
+        <div class="col-md-6" style="margin-bottom:8px;"><strong>Provincia:</strong> {{ profile.province or '-' if profile else '-' }} / {{ profile.city or '-' if profile else '' }}</div>
+        <div class="col-md-6" style="margin-bottom:8px;"><strong>REPROCANN Nº:</strong> {{ profile.reprocann_number or '-' if profile else '-' }}</div>
+        <div class="col-md-6" style="margin-bottom:8px;"><strong>Vencimiento:</strong> {{ profile.reprocann_expiry.strftime('%d/%m/%Y') if profile and profile.reprocann_expiry else '-' }}</div>
+        <div class="col-md-6" style="margin-bottom:8px;"><strong>Médico:</strong> {{ profile.doctor_name or '-' if profile else '-' }}</div>
+        <div class="col-md-6" style="margin-bottom:8px;"><strong>Matrícula:</strong> {{ profile.doctor_matricula or '-' if profile else '-' }}</div>
+        <div class="col-md-12"><strong>Patología:</strong> {{ profile.pathology or '-' if profile else '-' }}</div>
+    </div>
+</div>
+
+<div class="nw-card">
+    <h3 class="nw-card-title"><i class="bi bi-file-earmark-text icon"></i> Documentos cargados</h3>
+    {% if docs %}
+    <div class="row">
+    {% for d in docs %}
+    <div class="col-md-6" style="margin-bottom:12px;">
+        <div style="border:1px solid var(--nw-border); border-radius:8px; padding:10px; display:flex; align-items:center; gap:10px;">
+            <i class="bi bi-file-earmark-text" style="font-size:1.6rem; color:var(--nw-accent);"></i>
+            <div style="flex:1;">
+                <div style="font-weight:600; font-size:.88rem; text-transform:capitalize;">{{ d.document_type|replace('_',' ') }}</div>
+                <div style="font-size:.72rem; color:var(--nw-muted);">{{ d.uploaded_at.strftime('%d/%m/%Y %H:%M') if d.uploaded_at else '' }} · {{ (d.file_size or 0)/1024 }}KB</div>
+            </div>
+            <a href="{{ url_for('reprocann.uploaded_file', filename=d.file_path) }}" target="_blank" class="nw-btn nw-btn-outline nw-btn-sm">
+                <i class="bi bi-eye"></i> Ver
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+    </div>
+    {% else %}
+    <p style="color:var(--nw-muted);">Aún no cargó documentación.</p>
+    {% endif %}
+</div>
+
+<div class="nw-card">
+    <h3 class="nw-card-title"><i class="bi bi-shield-check icon"></i> Verificación</h3>
+    <p style="font-size:.85rem;">
+        Estado actual:
+        {% if profile.verification_status == 'verified' %}
+        <span class="nw-badge nw-badge-verified">Verificado</span>
+        {% elif profile.verification_status == 'in_review' %}
+        <span class="nw-badge nw-badge-review">En revisión</span>
+        {% elif profile.verification_status == 'rejected' %}
+        <span class="nw-badge nw-badge-rejected">Rechazado</span>
+        {% else %}
+        <span class="nw-badge nw-badge-pending">Pendiente</span>
+        {% endif %}
+    </p>
+    <form method="POST" action="{{ url_for('reprocann.moderacion_verificar', user_id=u.id) }}">
+        <div class="nw-form-group">
+            <label class="nw-label">Notas / motivo (visible para el usuario)</label>
+            <textarea name="notes" class="nw-textarea" rows="2">{{ profile.verification_notes or '' }}</textarea>
+        </div>
+        <div style="display:flex; gap:8px;">
+            <button name="accion" value="approve" class="nw-btn nw-btn-success">
+                <i class="bi bi-check-lg"></i> Aprobar
+            </button>
+            <button name="accion" value="reject" class="nw-btn nw-btn-danger"
+                    onclick="return confirm('¿Rechazar la verificación?')">
+                <i class="bi bi-x-lg"></i> Rechazar
+            </button>
+        </div>
+    </form>
+</div>
+</div>
+
+<div class="col-lg-5">
+
+<div class="nw-card">
+    <h3 class="nw-card-title"><i class="bi bi-credit-card icon"></i> Suscripción</h3>
+    {% if sub %}
+    <table style="width:100%; font-size:.85rem;">
+        <tr><td style="padding:5px 0; color:var(--nw-muted);">Estado:</td>
+            <td style="text-align:right;">
+                {% if sub.status == 'active' %}<span class="nw-badge nw-badge-active">Activa</span>
+                {% elif sub.status == 'expired' %}<span class="nw-badge nw-badge-expired">Vencida</span>
+                {% elif sub.status == 'cancelled' %}<span class="nw-badge nw-badge-rejected">Cancelada</span>
+                {% else %}<span class="nw-badge nw-badge-pending">{{ sub.status|capitalize }}</span>
+                {% endif %}
+            </td></tr>
+        <tr><td style="padding:5px 0; color:var(--nw-muted);">Inicio:</td>
+            <td style="text-align:right;">{{ sub.starts_at.strftime('%d/%m/%Y') if sub.starts_at else '-' }}</td></tr>
+        <tr><td style="padding:5px 0; color:var(--nw-muted);">Vence:</td>
+            <td style="text-align:right; font-weight:600;">{{ sub.expires_at.strftime('%d/%m/%Y') if sub.expires_at else '-' }}</td></tr>
+        <tr><td style="padding:5px 0; color:var(--nw-muted);">Último pago:</td>
+            <td style="text-align:right;">${{ sub.last_payment_amount or '-' }} {{ '(' + sub.last_payment_at.strftime('%d/%m/%Y') + ')' if sub.last_payment_at else '' }}</td></tr>
+        <tr><td style="padding:5px 0; color:var(--nw-muted);">Método:</td>
+            <td style="text-align:right;">{{ sub.payment_method or '-' }}</td></tr>
+    </table>
+    {% endif %}
+
+    <hr>
+    <h5 style="font-size:.82rem; font-weight:700; margin-bottom:10px;">Registrar pago / activar suscripción</h5>
+    <form method="POST" action="{{ url_for('reprocann.moderacion_activar_pago', user_id=u.id) }}">
+        <div class="row">
+            <div class="col-6 nw-form-group">
+                <label class="nw-label">Meses</label>
+                <input type="number" name="months" class="nw-input" value="1" min="1" max="12" required>
+            </div>
+            <div class="col-6 nw-form-group">
+                <label class="nw-label">Monto $</label>
+                <input type="number" step="any" name="amount" class="nw-input" value="5000" required>
+            </div>
+        </div>
+        <div class="nw-form-group">
+            <label class="nw-label">Método</label>
+            <select name="payment_method" class="nw-select">
+                <option value="transferencia">Transferencia bancaria</option>
+                <option value="mercadopago">Mercado Pago</option>
+                <option value="efectivo">Efectivo</option>
+                <option value="manual">Manual (otro)</option>
+            </select>
+        </div>
+        <div class="nw-form-group">
+            <label class="nw-label">Referencia</label>
+            <input type="text" name="payment_reference" class="nw-input" placeholder="Nº comprobante, ID MP, etc.">
+        </div>
+        <button class="nw-btn nw-btn-success nw-btn-block">
+            <i class="bi bi-check-lg"></i> Activar suscripción
+        </button>
+    </form>
+
+    {% if sub and sub.status == 'active' %}
+    <form method="POST" action="{{ url_for('reprocann.moderacion_desactivar', user_id=u.id) }}"
+          onsubmit="return confirm('¿Cancelar la suscripción de este usuario?')" style="margin-top:8px;">
+        <button class="nw-btn nw-btn-outline nw-btn-block" style="color:var(--nw-red); border-color:var(--nw-red);">
+            <i class="bi bi-x-circle"></i> Cancelar suscripción
+        </button>
+    </form>
+    {% endif %}
+</div>
+</div>
+
+</div>
+
+{% endblock %}

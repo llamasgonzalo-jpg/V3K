@@ -1,0 +1,122 @@
+{% extends "reprocann/_base.html" %}
+{% set active = 'reporte' %}
+{% block title %}Reporte RPCCI{% endblock %}
+{% block content %}
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+    <div>
+        <h1 style="font-size:1.4rem; font-weight:700; margin:0;">Reporte RPCCI</h1>
+        <p style="font-size:.85rem; color:var(--nw-muted); margin:2px 0 0;">Generado el {{ fecha_hoy }}</p>
+    </div>
+    <a href="{{ url_for('reprocann.reporte_rpcci_pdf') }}" class="nw-btn nw-btn-primary">
+        <i class="bi bi-file-earmark-pdf"></i> Descargar PDF
+    </a>
+</div>
+
+<div class="nw-card">
+    <h3 class="nw-card-title"><i class="bi bi-person-vcard icon"></i> Datos del cultivador</h3>
+    <div class="row" style="font-size:.88rem;">
+        <div class="col-md-4" style="margin-bottom:8px;"><strong>Nombre:</strong> {{ user.full_name or '-' }}</div>
+        <div class="col-md-4" style="margin-bottom:8px;"><strong>DNI:</strong> {{ profile.dni or '-' }}</div>
+        <div class="col-md-4" style="margin-bottom:8px;"><strong>Teléfono:</strong> {{ profile.phone or '-' }}</div>
+        <div class="col-md-4" style="margin-bottom:8px;"><strong>Nº REPROCANN:</strong> {{ profile.reprocann_number or '-' }}</div>
+        <div class="col-md-4" style="margin-bottom:8px;"><strong>Vencimiento:</strong> {{ profile.reprocann_expiry.strftime('%d/%m/%Y') if profile.reprocann_expiry else '-' }}</div>
+        <div class="col-md-4" style="margin-bottom:8px;"><strong>Médico:</strong> {{ profile.doctor_name or '-' }} ({{ profile.doctor_matricula or 's/m' }})</div>
+        <div class="col-md-12" style="margin-bottom:8px;"><strong>Domicilio:</strong> {{ profile.address or '-' }} — {{ profile.city or '' }}, {{ profile.province or '' }}</div>
+        <div class="col-md-12"><strong>Patología:</strong> {{ profile.pathology or '-' }}</div>
+    </div>
+</div>
+
+<div class="nw-card">
+    <h3 class="nw-card-title"><i class="bi bi-clipboard-data icon"></i> Resumen</h3>
+    <div class="row" style="text-align:center;">
+        <div class="col-md-3" style="padding:14px 0;">
+            <div style="font-size:2rem; font-weight:800; color:var(--nw-accent);">{{ cultivos|length }}</div>
+            <div style="font-size:.72rem; color:var(--nw-muted); text-transform:uppercase;">Cultivos</div>
+        </div>
+        <div class="col-md-3" style="padding:14px 0;">
+            <div style="font-size:2rem; font-weight:800; color:var(--nw-green);">{{ total_plants_active }}<small style="font-size:.85rem; color:var(--nw-muted);"> / 9</small></div>
+            <div style="font-size:.72rem; color:var(--nw-muted); text-transform:uppercase;">Plantas activas</div>
+        </div>
+        <div class="col-md-3" style="padding:14px 0;">
+            <div style="font-size:2rem; font-weight:800; color:var(--nw-purple);">{{ harvests|length }}</div>
+            <div style="font-size:.72rem; color:var(--nw-muted); text-transform:uppercase;">Cosechas</div>
+        </div>
+        <div class="col-md-3" style="padding:14px 0;">
+            <div style="font-size:2rem; font-weight:800; color:var(--nw-yellow);">{{ "%.0f"|format(total_dry) }}<small style="font-size:.85rem; color:var(--nw-muted);"> g</small></div>
+            <div style="font-size:.72rem; color:var(--nw-muted); text-transform:uppercase;">Cosechado total</div>
+        </div>
+    </div>
+</div>
+
+<div class="nw-card">
+    <h3 class="nw-card-title"><i class="bi bi-flower1 icon"></i> Detalle de cultivos</h3>
+    {% if cultivos %}
+    <table style="width:100%; font-size:.85rem;">
+        <thead style="font-size:.72rem; color:var(--nw-muted); text-transform:uppercase;">
+            <tr>
+                <th style="text-align:left; padding:8px 4px;">Cultivo</th>
+                <th>Variedad</th>
+                <th style="text-align:center;">Plantas</th>
+                <th style="text-align:center;">Etapa</th>
+                <th>Ubicación</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for c in cultivos %}
+        <tr style="border-top:1px solid var(--nw-border);">
+            <td style="padding:8px 4px; font-weight:600;">{{ c.name }}</td>
+            <td>{{ c.variety or '-' }}</td>
+            <td style="text-align:center;">{{ c.plant_count or 0 }}</td>
+            <td style="text-align:center; text-transform:capitalize;">{{ c.stage or '-' }}</td>
+            <td style="font-size:.78rem;">
+                {% if c.latitude %}
+                <span title="Lat: {{ c.latitude }} Long: {{ c.longitude }}"><i class="bi bi-geo-alt-fill" style="color:var(--nw-accent);"></i></span>
+                {{ c.city or c.address[:30] if c.address else 'Sin dirección' }}
+                {% else %}
+                <span style="color:var(--nw-muted);">Sin georreferencia</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if c.status == 'active' %}<span class="nw-badge nw-badge-active">Activo</span>
+                {% else %}<span class="nw-badge nw-badge-trial">{{ c.status|capitalize }}</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color:var(--nw-muted);">Sin cultivos registrados.</p>
+    {% endif %}
+</div>
+
+{% if harvests %}
+<div class="nw-card">
+    <h3 class="nw-card-title"><i class="bi bi-bag-check icon"></i> Cosechas registradas</h3>
+    <table style="width:100%; font-size:.85rem;">
+        <thead style="font-size:.72rem; color:var(--nw-muted); text-transform:uppercase;">
+            <tr><th style="text-align:left; padding:8px 4px;">Fecha</th><th>Cultivo</th><th style="text-align:right;">Fresco</th><th style="text-align:right;">Seco</th><th>Destino</th></tr>
+        </thead>
+        <tbody>
+        {% for h in harvests %}
+        <tr style="border-top:1px solid var(--nw-border);">
+            <td style="padding:8px 4px;">{{ h.harvest_date.strftime('%d/%m/%Y') }}</td>
+            <td>{{ h.cultivo.name if h.cultivo else '-' }}</td>
+            <td style="text-align:right;">{{ "%.1f"|format(h.wet_weight_g) if h.wet_weight_g else '-' }} g</td>
+            <td style="text-align:right; font-weight:600;">{{ "%.1f"|format(h.dry_weight_g) if h.dry_weight_g else '-' }} g</td>
+            <td style="font-size:.78rem;">{{ h.purpose or '-' }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<div class="nw-alert nw-alert-info" style="margin-top:14px;">
+    <i class="bi bi-info-circle"></i>
+    <div>Este reporte se genera con tus datos cargados. Descargá el <strong>PDF</strong> para tu presentación oficial al RPCCI.</div>
+</div>
+
+{% endblock %}

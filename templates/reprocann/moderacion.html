@@ -1,0 +1,96 @@
+{% extends "reprocann/_base.html" %}
+{% set active = 'moderacion' %}
+{% block title %}Moderación{% endblock %}
+{% block content %}
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+    <div>
+        <h1 style="font-size:1.4rem; font-weight:700; margin:0;">Panel de moderación</h1>
+        <p style="font-size:.85rem; color:var(--nw-muted); margin:2px 0 0;">V3K Network — verificación y suscripciones</p>
+    </div>
+</div>
+
+<div class="nw-kpis">
+    <div class="nw-kpi">
+        <div class="nw-kpi-icon bg-blue"><i class="bi bi-people"></i></div>
+        <div class="nw-kpi-value">{{ total_cultivadores }}</div>
+        <div class="nw-kpi-label">Cultivadores registrados</div>
+    </div>
+    <div class="nw-kpi">
+        <div class="nw-kpi-icon bg-green"><i class="bi bi-patch-check"></i></div>
+        <div class="nw-kpi-value">{{ verificados }}</div>
+        <div class="nw-kpi-label">Verificados</div>
+    </div>
+    <div class="nw-kpi">
+        <div class="nw-kpi-icon bg-yellow"><i class="bi bi-credit-card-fill"></i></div>
+        <div class="nw-kpi-value">{{ activos }}</div>
+        <div class="nw-kpi-label">Suscripciones activas</div>
+    </div>
+    <div class="nw-kpi">
+        <div class="nw-kpi-icon bg-red"><i class="bi bi-hourglass-split"></i></div>
+        <div class="nw-kpi-value">{{ pendientes|length }}</div>
+        <div class="nw-kpi-label">Pendientes de verificar</div>
+    </div>
+</div>
+
+<div class="row">
+<div class="col-lg-7">
+<div class="nw-card">
+    <h3 class="nw-card-title"><i class="bi bi-shield-exclamation icon"></i> Verificaciones pendientes</h3>
+    {% if pendientes %}
+    <table style="width:100%; font-size:.88rem;">
+        <thead style="font-size:.72rem; color:var(--nw-muted); text-transform:uppercase;">
+            <tr><th style="text-align:left; padding:10px 0;">Usuario</th><th>DNI</th><th>REPROCANN</th><th>Estado</th><th></th></tr>
+        </thead>
+        <tbody>
+        {% for p in pendientes %}
+        <tr style="border-top:1px solid var(--nw-border);">
+            <td style="padding:10px 0;">
+                <strong>{{ p.user.username if p.user else '?' }}</strong><br>
+                <small style="color:var(--nw-muted);">{{ p.user.full_name if p.user else '' }}</small>
+            </td>
+            <td>{{ p.dni or '-' }}</td>
+            <td>{{ p.reprocann_number or '-' }}</td>
+            <td>
+                {% if p.verification_status == 'pending' %}
+                <span class="nw-badge nw-badge-pending">Pendiente</span>
+                {% elif p.verification_status == 'in_review' %}
+                <span class="nw-badge nw-badge-review">En revisión</span>
+                {% endif %}
+            </td>
+            <td style="text-align:right;">
+                <a href="{{ url_for('reprocann.moderacion_usuario', user_id=p.user_id) }}" class="nw-btn nw-btn-outline nw-btn-sm">
+                    Revisar <i class="bi bi-arrow-right"></i>
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color:var(--nw-muted);">No hay verificaciones pendientes.</p>
+    {% endif %}
+</div>
+</div>
+
+<div class="col-lg-5">
+<div class="nw-card">
+    <h3 class="nw-card-title"><i class="bi bi-cash icon"></i> Suscripciones pendientes</h3>
+    {% if subs_pendientes %}
+    {% for s in subs_pendientes %}
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--nw-border);">
+        <div style="font-size:.85rem;">
+            <strong>{{ s.user.username if s.user else '?' }}</strong><br>
+            <small style="color:var(--nw-muted);">Registrado {{ s.created_at.strftime('%d/%m/%Y') if s.created_at else '' }}</small>
+        </div>
+        <a href="{{ url_for('reprocann.moderacion_usuario', user_id=s.user_id) }}" class="nw-btn nw-btn-primary nw-btn-sm">Gestionar</a>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p style="color:var(--nw-muted);">No hay pagos pendientes.</p>
+    {% endif %}
+</div>
+</div>
+</div>
+
+{% endblock %}

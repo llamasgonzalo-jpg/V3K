@@ -1,0 +1,245 @@
+{% extends "reprocann/_base.html" %}
+{% set active = 'cultivos' %}
+{% block title %}{{ cultivo.name }}{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+{% endblock %}
+{% block content %}
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+    <div style="display:flex; gap:14px; align-items:center;">
+        <a href="{{ url_for('reprocann.cultivos') }}" class="nw-btn nw-btn-outline nw-btn-sm">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <div>
+            <h1 style="font-size:1.4rem; font-weight:700; margin:0;">{{ cultivo.name }}</h1>
+            <p style="font-size:.85rem; color:var(--nw-muted); margin:2px 0 0;">{{ cultivo.variety or 'Sin variedad' }}</p>
+        </div>
+    </div>
+    <div style="display:flex; gap:8px;">
+        <a href="{{ url_for('reprocann.cultivo_edit', id=cultivo.id) }}" class="nw-btn nw-btn-outline">
+            <i class="bi bi-pencil"></i> Editar
+        </a>
+    </div>
+</div>
+
+<div class="row">
+<div class="col-lg-7">
+
+<div class="nw-card">
+    <h3 class="nw-card-title"><i class="bi bi-info-circle icon"></i> Datos del cultivo</h3>
+    <div class="row" style="font-size:.88rem;">
+        <div class="col-md-4" style="margin-bottom:10px;">
+            <div style="color:var(--nw-muted); font-size:.72rem; text-transform:uppercase;">Plantas</div>
+            <div style="font-weight:700; font-size:1.1rem;">{{ cultivo.plant_count or 0 }} <small style="color:var(--nw-muted); font-weight:400;">/ 9</small></div>
+        </div>
+        <div class="col-md-4" style="margin-bottom:10px;">
+            <div style="color:var(--nw-muted); font-size:.72rem; text-transform:uppercase;">Etapa</div>
+            <div style="font-weight:600; text-transform:capitalize;">{{ cultivo.stage or '-' }}</div>
+        </div>
+        <div class="col-md-4" style="margin-bottom:10px;">
+            <div style="color:var(--nw-muted); font-size:.72rem; text-transform:uppercase;">Ambiente</div>
+            <div style="font-weight:600; text-transform:capitalize;">{{ cultivo.environment or '-' }}</div>
+        </div>
+        <div class="col-md-4" style="margin-bottom:10px;">
+            <div style="color:var(--nw-muted); font-size:.72rem; text-transform:uppercase;">Inicio</div>
+            <div>{{ cultivo.start_date.strftime('%d/%m/%Y') if cultivo.start_date else '-' }}</div>
+        </div>
+        <div class="col-md-4" style="margin-bottom:10px;">
+            <div style="color:var(--nw-muted); font-size:.72rem; text-transform:uppercase;">Cosecha estimada</div>
+            <div>{{ cultivo.expected_harvest_date.strftime('%d/%m/%Y') if cultivo.expected_harvest_date else '-' }}</div>
+        </div>
+        <div class="col-md-4" style="margin-bottom:10px;">
+            <div style="color:var(--nw-muted); font-size:.72rem; text-transform:uppercase;">Superficie</div>
+            <div>{{ cultivo.surface_m2 }} m²{% if not cultivo.surface_m2 %}-{% endif %}</div>
+        </div>
+    </div>
+    {% if cultivo.notes %}
+    <hr>
+    <div style="font-size:.85rem; color:var(--nw-text);">{{ cultivo.notes }}</div>
+    {% endif %}
+</div>
+
+<div class="nw-card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <h3 style="font-size:1rem; font-weight:700; margin:0;"><i class="bi bi-clock-history" style="color:var(--nw-accent);"></i> Eventos y bitácora</h3>
+        <button class="nw-btn nw-btn-primary nw-btn-sm" data-bs-toggle="modal" data-bs-target="#newEventModal">
+            <i class="bi bi-plus-lg"></i> Nuevo evento
+        </button>
+    </div>
+    {% if events %}
+    <div class="nw-timeline">
+        {% for ev in events %}
+        <div class="nw-tl-item {% if ev.event_type=='riego' %}green{% elif ev.event_type=='cambio_etapa' %}purple{% elif ev.event_type=='foto' %}yellow{% endif %}">
+            <div class="nw-tl-time">{{ ev.event_date.strftime('%d/%m/%Y %H:%M') }} · {{ ev.event_type|capitalize|replace('_', ' ') }}</div>
+            <div class="nw-tl-title">{{ ev.title or ev.event_type|capitalize }}</div>
+            {% if ev.description %}<div class="nw-tl-desc">{{ ev.description }}</div>{% endif %}
+            {% if ev.photo_path %}
+            <img src="{{ url_for('reprocann.uploaded_file', filename=ev.photo_path) }}" class="nw-tl-photo">
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p style="color:var(--nw-muted); font-size:.88rem;">Sin eventos registrados. Empezá creando uno.</p>
+    {% endif %}
+</div>
+
+<div class="nw-card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <h3 style="font-size:1rem; font-weight:700; margin:0;"><i class="bi bi-bag-check" style="color:var(--nw-accent);"></i> Cosechas</h3>
+        <button class="nw-btn nw-btn-primary nw-btn-sm" data-bs-toggle="modal" data-bs-target="#newHarvestModal">
+            <i class="bi bi-plus-lg"></i> Registrar cosecha
+        </button>
+    </div>
+    {% if harvests %}
+    <table style="width:100%; font-size:.85rem;">
+        <thead style="font-size:.72rem; color:var(--nw-muted); text-transform:uppercase;">
+            <tr><th style="text-align:left; padding:8px 0;">Fecha</th><th style="text-align:right;">Fresco</th><th style="text-align:right;">Seco</th><th>Destino</th></tr>
+        </thead>
+        <tbody>
+        {% for h in harvests %}
+        <tr style="border-top:1px solid var(--nw-border);">
+            <td style="padding:8px 0;">{{ h.harvest_date.strftime('%d/%m/%Y') }}</td>
+            <td style="text-align:right;">{{ "%.1f"|format(h.wet_weight_g) if h.wet_weight_g else '-' }} g</td>
+            <td style="text-align:right; font-weight:600;">{{ "%.1f"|format(h.dry_weight_g) if h.dry_weight_g else '-' }} g</td>
+            <td style="font-size:.78rem; color:var(--nw-muted);">{{ h.purpose or '-' }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color:var(--nw-muted); font-size:.88rem;">Sin cosechas registradas todavía.</p>
+    {% endif %}
+</div>
+
+</div>
+
+<div class="col-lg-5">
+
+{% if cultivo.latitude and cultivo.longitude %}
+<div class="nw-card">
+    <h3 class="nw-card-title"><i class="bi bi-geo-alt-fill icon"></i> Ubicación</h3>
+    <p style="font-size:.82rem; color:var(--nw-muted); margin-bottom:8px;">{{ cultivo.address or '—' }}</p>
+    <div id="cultivo-map" style="height:240px;"></div>
+    <p style="font-size:.72rem; color:var(--nw-muted); margin-top:6px;">
+        Lat: {{ "%.6f"|format(cultivo.latitude) }} · Long: {{ "%.6f"|format(cultivo.longitude) }}
+    </p>
+</div>
+{% endif %}
+
+<div class="nw-card">
+    <h3 class="nw-card-title"><i class="bi bi-shield-lock icon"></i> Privacidad</h3>
+    <p style="font-size:.85rem; color:var(--nw-text);">
+        Este cultivo es {% if cultivo.is_public %}<strong style="color:var(--nw-green);">público</strong>{% else %}<strong style="color:var(--nw-muted);">privado</strong>{% endif %}.
+    </p>
+    <p style="font-size:.78rem; color:var(--nw-muted);">
+        {% if cultivo.is_public %}
+        Cuando habilitemos el feed social, este cultivo será visible para la comunidad.
+        {% else %}
+        Solo vos podés ver este cultivo. Editalo para hacerlo público.
+        {% endif %}
+    </p>
+</div>
+
+</div>
+</div>
+
+<!-- Modal: nuevo evento -->
+<div class="modal fade" id="newEventModal" tabindex="-1">
+<div class="modal-dialog"><div class="modal-content">
+<form method="POST" action="{{ url_for('reprocann.event_create', id=cultivo.id) }}" enctype="multipart/form-data">
+<div class="modal-header"><h5>Nuevo evento</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+<div class="modal-body">
+    <div class="nw-form-group">
+        <label class="nw-label">Tipo de evento</label>
+        <select name="event_type" class="nw-select" id="ev-type">
+            {% for t in ['riego','fertilizacion','poda','cambio_etapa','observacion','foto','trasplante'] %}
+            <option value="{{ t }}">{{ t|capitalize|replace('_',' ') }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="nw-form-group" id="ev-stage-div" style="display:none;">
+        <label class="nw-label">Nueva etapa</label>
+        <select name="new_stage" class="nw-select">
+            {% for s in ['propagacion','vegetativo','floracion','cosecha','secado','finalizado'] %}
+            <option value="{{ s }}">{{ s|capitalize }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="nw-form-group">
+        <label class="nw-label">Título</label>
+        <input type="text" name="title" class="nw-input" placeholder="Ej: Riego con fertilizante NPK">
+    </div>
+    <div class="nw-form-group">
+        <label class="nw-label">Fecha y hora</label>
+        <input type="datetime-local" name="event_date" class="nw-input">
+    </div>
+    <div class="nw-form-group">
+        <label class="nw-label">Descripción</label>
+        <textarea name="description" class="nw-textarea" rows="3"></textarea>
+    </div>
+    <div class="nw-form-group">
+        <label class="nw-label">Foto (opcional)</label>
+        <input type="file" name="photo" class="nw-input" accept="image/*">
+    </div>
+</div>
+<div class="modal-footer">
+    <button type="button" class="nw-btn nw-btn-outline" data-bs-dismiss="modal">Cancelar</button>
+    <button type="submit" class="nw-btn nw-btn-primary">Guardar evento</button>
+</div>
+</form>
+</div></div></div>
+
+<!-- Modal: nueva cosecha -->
+<div class="modal fade" id="newHarvestModal" tabindex="-1">
+<div class="modal-dialog"><div class="modal-content">
+<form method="POST" action="{{ url_for('reprocann.harvest_create', id=cultivo.id) }}">
+<div class="modal-header"><h5>Registrar cosecha</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+<div class="modal-body">
+    <div class="nw-form-group">
+        <label class="nw-label">Fecha de cosecha *</label>
+        <input type="date" name="harvest_date" class="nw-input" required>
+    </div>
+    <div class="row">
+        <div class="col-6 nw-form-group">
+            <label class="nw-label">Peso fresco (g)</label>
+            <input type="number" step="any" name="wet_weight_g" class="nw-input">
+        </div>
+        <div class="col-6 nw-form-group">
+            <label class="nw-label">Peso seco (g)</label>
+            <input type="number" step="any" name="dry_weight_g" class="nw-input">
+        </div>
+    </div>
+    <div class="nw-form-group">
+        <label class="nw-label">Destino / uso</label>
+        <input type="text" name="purpose" class="nw-input" placeholder="Ej: aceite medicinal, infusiones">
+    </div>
+    <div class="nw-form-group">
+        <label class="nw-label">Notas</label>
+        <textarea name="notes" class="nw-textarea" rows="2"></textarea>
+    </div>
+</div>
+<div class="modal-footer">
+    <button type="button" class="nw-btn nw-btn-outline" data-bs-dismiss="modal">Cancelar</button>
+    <button type="submit" class="nw-btn nw-btn-primary">Registrar</button>
+</div>
+</form>
+</div></div></div>
+
+{% endblock %}
+{% block scripts %}
+{% if cultivo.latitude and cultivo.longitude %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const m = L.map('cultivo-map').setView([{{ cultivo.latitude }}, {{ cultivo.longitude }}], 16);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OSM' }).addTo(m);
+L.marker([{{ cultivo.latitude }}, {{ cultivo.longitude }}]).addTo(m).bindPopup('{{ cultivo.name }}');
+</script>
+{% endif %}
+<script>
+document.getElementById('ev-type').addEventListener('change', function() {
+    document.getElementById('ev-stage-div').style.display = this.value === 'cambio_etapa' ? 'block' : 'none';
+});
+</script>
+{% endblock %}

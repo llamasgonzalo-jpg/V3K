@@ -71,6 +71,7 @@ def create_app():
     from blueprints.dispatch import dispatch_bp
     from blueprints.reports import reports_bp
     from blueprints.patients import patients_bp
+    from blueprints.reprocann import reprocann_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
@@ -83,11 +84,15 @@ def create_app():
     app.register_blueprint(dispatch_bp)
     app.register_blueprint(reports_bp)
     app.register_blueprint(patients_bp)
+    app.register_blueprint(reprocann_bp)
 
     # Main routes
     @app.route('/')
     def index():
         if current_user.is_authenticated:
+            # Si es cultivador REPROCANN, redirigir a su panel
+            if current_user.role and current_user.role.name == 'Cultivador REPROCANN':
+                return redirect(url_for('reprocann.dashboard'))
             return redirect(url_for('main.dashboard'))
         return redirect(url_for('auth.login'))
 
@@ -169,8 +174,44 @@ def create_app():
         os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
         if not User.query.first():
             seed_data()
+        seed_profile_types()  # idempotente — siempre verifica
 
     return app
+
+def seed_profile_types():
+    """Inserta los tipos de perfil de V3K Network si no existen."""
+    from models import ProfileType, Role
+    types = [
+        ('cultivador_reprocann', 'Cultivador REPROCANN',
+         'Persona física inscripta al REPROCANN con autorización de autocultivo.',
+         5000, 'bi-flower1', '#10b981'),
+        ('ong',           'ONG / Asociación civil',
+         'Asociaciones civiles que asisten pacientes con cannabis medicinal.',
+         20000, 'bi-people-fill', '#1a8fd1'),
+        ('fitomejorador', 'Fitomejorador',
+         'Profesional matriculado INASE para mejoramiento genético.',
+         50000, 'bi-diagram-3', '#8b5cf6'),
+        ('empresa',       'Empresa',
+         'Empresas habilitadas ARICCAME para producción industrial.',
+         50000, 'bi-building', '#f59e0b'),
+        ('laboratorio',   'Laboratorio',
+         'Laboratorios habilitados para análisis y control de calidad.',
+         50000, 'bi-droplet', '#ef4444'),
+        ('moderador_v3k', 'Moderador V3K',
+         'Equipo de moderación de V3K Network.',
+         0, 'bi-shield-check', '#6b7689'),
+    ]
+    existing = {p.code for p in ProfileType.query.all()}
+    for code, name, desc, price, icon, color in types:
+        if code not in existing:
+            db.session.add(ProfileType(code=code, name=name, description=desc,
+                                       monthly_price=price, icon=icon, color=color))
+    # Rol Cultivador REPROCANN si no existe
+    if not Role.query.filter_by(name='Cultivador REPROCANN').first():
+        db.session.add(Role(name='Cultivador REPROCANN',
+                            description='Usuario de V3K Network — autocultivador',
+                            permissions='reprocann'))
+    db.session.commit()
 
 def seed_data():
     # Roles
