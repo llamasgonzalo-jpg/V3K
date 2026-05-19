@@ -1,96 +1,261 @@
 {% extends "reprocann/_base.html" %}
 {% set active = 'moderacion' %}
-{% block title %}Moderación{% endblock %}
+{% block title %}Panel de Administración{% endblock %}
 {% block content %}
 
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
     <div>
-        <h1 style="font-size:1.4rem; font-weight:700; margin:0;">Panel de moderación</h1>
-        <p style="font-size:.85rem; color:var(--nw-muted); margin:2px 0 0;">V3K Network — verificación y suscripciones</p>
+        <h1 style="font-size:1.4rem; font-weight:700; margin:0;">Panel de Administración</h1>
+        <p style="font-size:.85rem; color:var(--nw-muted); margin:2px 0 0;">V3K Network — Moderación y suscripciones</p>
+    </div>
+    <div style="display:flex; gap:8px;">
+        <a href="{{ url_for('reprocann.moderacion_usuarios') }}" class="nw-btn nw-btn-outline nw-btn-sm">
+            <i class="bi bi-people"></i> Ver todos los usuarios
+        </a>
+        <a href="{{ url_for('reprocann.moderacion_suscripciones') }}" class="nw-btn nw-btn-outline nw-btn-sm">
+            <i class="bi bi-cash-stack"></i> Suscripciones
+        </a>
     </div>
 </div>
 
-<div class="nw-kpis">
-    <div class="nw-kpi">
-        <div class="nw-kpi-icon bg-blue"><i class="bi bi-people"></i></div>
-        <div class="nw-kpi-value">{{ total_cultivadores }}</div>
-        <div class="nw-kpi-label">Cultivadores registrados</div>
-    </div>
-    <div class="nw-kpi">
-        <div class="nw-kpi-icon bg-green"><i class="bi bi-patch-check"></i></div>
-        <div class="nw-kpi-value">{{ verificados }}</div>
-        <div class="nw-kpi-label">Verificados</div>
-    </div>
-    <div class="nw-kpi">
-        <div class="nw-kpi-icon bg-yellow"><i class="bi bi-credit-card-fill"></i></div>
-        <div class="nw-kpi-value">{{ activos }}</div>
-        <div class="nw-kpi-label">Suscripciones activas</div>
-    </div>
-    <div class="nw-kpi">
-        <div class="nw-kpi-icon bg-red"><i class="bi bi-hourglass-split"></i></div>
-        <div class="nw-kpi-value">{{ pendientes|length }}</div>
-        <div class="nw-kpi-label">Pendientes de verificar</div>
+{# ═══════════ RESUMEN GENERAL ═══════════ #}
+<div class="nw-card" style="margin-bottom:14px;">
+    <h3 class="nw-card-title"><i class="bi bi-bar-chart icon"></i> Resumen general</h3>
+    <div class="nw-kpis">
+        <a href="{{ url_for('reprocann.moderacion_usuarios') }}" class="nw-kpi">
+            <div class="nw-kpi-icon bg-blue"><i class="bi bi-people-fill"></i></div>
+            <div class="nw-kpi-value">{{ total_usuarios }}</div>
+            <div class="nw-kpi-label">Total usuarios</div>
+            <div class="nw-kpi-sub">en V3K Network</div>
+        </a>
+        <a href="{{ url_for('reprocann.moderacion_usuarios', status='verified') }}" class="nw-kpi">
+            <div class="nw-kpi-icon bg-green"><i class="bi bi-patch-check"></i></div>
+            <div class="nw-kpi-value">{{ verificados }}</div>
+            <div class="nw-kpi-label">Verificados</div>
+            <div class="nw-kpi-sub">con insignia ✓</div>
+        </a>
+        <a href="{{ url_for('reprocann.moderacion_suscripciones', status='active') }}" class="nw-kpi">
+            <div class="nw-kpi-icon bg-yellow"><i class="bi bi-credit-card-fill"></i></div>
+            <div class="nw-kpi-value">{{ subs_activas }}</div>
+            <div class="nw-kpi-label">Suscripciones activas</div>
+            <div class="nw-kpi-sub">cobrando este mes</div>
+        </a>
+        <a href="{{ url_for('reprocann.moderacion_suscripciones', status='active') }}" class="nw-kpi">
+            <div class="nw-kpi-icon bg-purple"><i class="bi bi-cash-coin"></i></div>
+            <div class="nw-kpi-value">${{ "{:,.0f}".format(ingresos_mensuales).replace(',', '.') }}</div>
+            <div class="nw-kpi-label">Ingreso mensual recurrente</div>
+            <div class="nw-kpi-sub">esperado al ritmo actual</div>
+        </a>
     </div>
 </div>
 
-<div class="row">
-<div class="col-lg-7">
-<div class="nw-card">
-    <h3 class="nw-card-title"><i class="bi bi-shield-exclamation icon"></i> Verificaciones pendientes</h3>
-    {% if pendientes %}
-    <table style="width:100%; font-size:.88rem;">
-        <thead style="font-size:.72rem; color:var(--nw-muted); text-transform:uppercase;">
-            <tr><th style="text-align:left; padding:10px 0;">Usuario</th><th>DNI</th><th>REPROCANN</th><th>Estado</th><th></th></tr>
-        </thead>
-        <tbody>
-        {% for p in pendientes %}
-        <tr style="border-top:1px solid var(--nw-border);">
-            <td style="padding:10px 0;">
-                <strong>{{ p.user.username if p.user else '?' }}</strong><br>
-                <small style="color:var(--nw-muted);">{{ p.user.full_name if p.user else '' }}</small>
-            </td>
-            <td>{{ p.dni or '-' }}</td>
-            <td>{{ p.reprocann_number or '-' }}</td>
-            <td>
-                {% if p.verification_status == 'pending' %}
-                <span class="nw-badge nw-badge-pending">Pendiente</span>
-                {% elif p.verification_status == 'in_review' %}
-                <span class="nw-badge nw-badge-review">En revisión</span>
-                {% endif %}
-            </td>
-            <td style="text-align:right;">
-                <a href="{{ url_for('reprocann.moderacion_usuario', user_id=p.user_id) }}" class="nw-btn nw-btn-outline nw-btn-sm">
-                    Revisar <i class="bi bi-arrow-right"></i>
-                </a>
-            </td>
-        </tr>
+{# ═══════════ POR TIPO DE PERFIL ═══════════ #}
+<div class="nw-card" style="margin-bottom:14px;">
+    <h3 class="nw-card-title"><i class="bi bi-diagram-3 icon"></i> Usuarios por tipo de perfil</h3>
+    <div class="nw-kpis" style="grid-template-columns:repeat(5, 1fr);">
+        {% for s in stats_by_type %}
+        <a href="{{ url_for('reprocann.moderacion_usuarios', profile_type=s.code) }}" class="nw-kpi"
+           style="border-top:3px solid {{ s.color }};">
+            <div class="nw-kpi-icon" style="background:{{ s.color }}22; color:{{ s.color }};">
+                <i class="bi {{ s.icon }}"></i>
+            </div>
+            <div class="nw-kpi-value">{{ s.count }}</div>
+            <div class="nw-kpi-label">{{ s.name }}</div>
+            <div class="nw-kpi-sub">${{ "{:,.0f}".format(s.price).replace(',', '.') }} / mes</div>
+        </a>
         {% endfor %}
-        </tbody>
-    </table>
+    </div>
+</div>
+
+{# ═══════════ ESTADO DE VERIFICACIÓN Y PAGOS ═══════════ #}
+<div class="row">
+
+<div class="col-lg-6">
+<div class="nw-card">
+    <h3 class="nw-card-title"><i class="bi bi-shield-check icon"></i> Verificaciones</h3>
+    <a href="{{ url_for('reprocann.moderacion_usuarios', status='pending') }}"
+       class="metric-row" style="display:flex; justify-content:space-between; padding:10px 12px; border-radius:8px;
+       background:#fef3c7; text-decoration:none; margin-bottom:6px;">
+        <div><i class="bi bi-hourglass-split" style="color:#92400e;"></i> <strong style="color:#92400e;">Pendientes</strong></div>
+        <strong style="color:#92400e;">{{ pendientes_ver }}</strong>
+    </a>
+    <a href="{{ url_for('reprocann.moderacion_usuarios', status='verified') }}"
+       class="metric-row" style="display:flex; justify-content:space-between; padding:10px 12px; border-radius:8px;
+       background:#d1fae5; text-decoration:none; margin-bottom:6px;">
+        <div><i class="bi bi-patch-check" style="color:#065f46;"></i> <strong style="color:#065f46;">Verificados</strong></div>
+        <strong style="color:#065f46;">{{ verificados }}</strong>
+    </a>
+    <a href="{{ url_for('reprocann.moderacion_usuarios', status='rejected') }}"
+       class="metric-row" style="display:flex; justify-content:space-between; padding:10px 12px; border-radius:8px;
+       background:#fee2e2; text-decoration:none;">
+        <div><i class="bi bi-x-circle" style="color:#991b1b;"></i> <strong style="color:#991b1b;">Rechazados</strong></div>
+        <strong style="color:#991b1b;">{{ rechazados }}</strong>
+    </a>
+</div>
+</div>
+
+<div class="col-lg-6">
+<div class="nw-card">
+    <h3 class="nw-card-title"><i class="bi bi-cash-coin icon"></i> Suscripciones</h3>
+    <a href="{{ url_for('reprocann.moderacion_suscripciones', status='active') }}"
+       class="metric-row" style="display:flex; justify-content:space-between; padding:10px 12px; border-radius:8px;
+       background:#d1fae5; text-decoration:none; margin-bottom:6px;">
+        <div><i class="bi bi-check-circle" style="color:#065f46;"></i> <strong style="color:#065f46;">Activas</strong></div>
+        <strong style="color:#065f46;">{{ subs_activas }}</strong>
+    </a>
+    <a href="{{ url_for('reprocann.moderacion_suscripciones', status='pending') }}"
+       class="metric-row" style="display:flex; justify-content:space-between; padding:10px 12px; border-radius:8px;
+       background:#fef3c7; text-decoration:none; margin-bottom:6px;">
+        <div><i class="bi bi-hourglass-split" style="color:#92400e;"></i> <strong style="color:#92400e;">Pendientes de pago</strong></div>
+        <strong style="color:#92400e;">{{ subs_pendientes }}</strong>
+    </a>
+    <a href="{{ url_for('reprocann.moderacion_suscripciones', status='expired') }}"
+       class="metric-row" style="display:flex; justify-content:space-between; padding:10px 12px; border-radius:8px;
+       background:#fee2e2; text-decoration:none; margin-bottom:6px;">
+        <div><i class="bi bi-x-circle" style="color:#991b1b;"></i> <strong style="color:#991b1b;">Vencidas</strong></div>
+        <strong style="color:#991b1b;">{{ subs_vencidas }}</strong>
+    </a>
+    <a href="{{ url_for('reprocann.moderacion_suscripciones', status='cancelled') }}"
+       class="metric-row" style="display:flex; justify-content:space-between; padding:10px 12px; border-radius:8px;
+       background:var(--nw-bg); text-decoration:none;">
+        <div><i class="bi bi-slash-circle" style="color:var(--nw-muted);"></i> <strong style="color:var(--nw-text);">Canceladas</strong></div>
+        <strong style="color:var(--nw-text);">{{ subs_canceladas }}</strong>
+    </a>
+</div>
+</div>
+
+</div>
+
+{# ═══════════ COLAS URGENTES ═══════════ #}
+<div class="row">
+<div class="col-lg-6">
+<div class="nw-card">
+    <h3 class="nw-card-title"><i class="bi bi-shield-exclamation icon"></i> Verificaciones pendientes
+        <span style="font-size:.7rem; color:var(--nw-muted); font-weight:500; margin-left:auto;">{{ pendientes|length }} en cola</span>
+    </h3>
+    {% if pendientes %}
+    {% for p in pendientes %}
+    <a href="{{ url_for('reprocann.moderacion_usuario', user_id=p.user_id) }}"
+       style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--nw-border); text-decoration:none; color:inherit;">
+        <div>
+            <strong style="font-size:.88rem;">{{ p.user.username if p.user else '?' }}</strong>
+            <span style="font-size:.7rem; color:var(--nw-muted); margin-left:6px;">
+                {{ p.profile_type.name if p.profile_type else 'Sin tipo' }}
+            </span>
+            <br>
+            <small style="color:var(--nw-muted);">{{ p.user.full_name if p.user else '' }} · DNI {{ p.dni or '-' }}</small>
+        </div>
+        <span class="nw-badge nw-badge-{{ 'review' if p.verification_status=='in_review' else 'pending' }}">
+            {{ 'En revisión' if p.verification_status=='in_review' else 'Pendiente' }}
+        </span>
+    </a>
+    {% endfor %}
+    {% if pendientes_ver > 8 %}
+    <a href="{{ url_for('reprocann.moderacion_usuarios', status='pending') }}" class="nw-btn nw-btn-outline nw-btn-sm" style="margin-top:10px;">
+        Ver todos ({{ pendientes_ver }})
+    </a>
+    {% endif %}
     {% else %}
-    <p style="color:var(--nw-muted);">No hay verificaciones pendientes.</p>
+    <p style="color:var(--nw-muted); font-size:.88rem;">✅ No hay verificaciones pendientes.</p>
     {% endif %}
 </div>
 </div>
 
-<div class="col-lg-5">
+<div class="col-lg-6">
 <div class="nw-card">
-    <h3 class="nw-card-title"><i class="bi bi-cash icon"></i> Suscripciones pendientes</h3>
-    {% if subs_pendientes %}
-    {% for s in subs_pendientes %}
-    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--nw-border);">
-        <div style="font-size:.85rem;">
-            <strong>{{ s.user.username if s.user else '?' }}</strong><br>
+    <h3 class="nw-card-title"><i class="bi bi-cash icon"></i> Pagos pendientes
+        <span style="font-size:.7rem; color:var(--nw-muted); font-weight:500; margin-left:auto;">{{ subs_a_cobrar|length }} en cola</span>
+    </h3>
+    {% if subs_a_cobrar %}
+    {% for s in subs_a_cobrar %}
+    <a href="{{ url_for('reprocann.moderacion_usuario', user_id=s.user_id) }}"
+       style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--nw-border); text-decoration:none; color:inherit;">
+        <div>
+            <strong style="font-size:.88rem;">{{ s.user.username if s.user else '?' }}</strong>
+            <span style="font-size:.7rem; color:var(--nw-muted); margin-left:6px;">
+                {{ s.profile_type.name if s.profile_type else 'Sin tipo' }}
+            </span>
+            <br>
             <small style="color:var(--nw-muted);">Registrado {{ s.created_at.strftime('%d/%m/%Y') if s.created_at else '' }}</small>
         </div>
-        <a href="{{ url_for('reprocann.moderacion_usuario', user_id=s.user_id) }}" class="nw-btn nw-btn-primary nw-btn-sm">Gestionar</a>
-    </div>
+        <strong style="font-size:.9rem; color:var(--nw-accent);">${{ "{:,.0f}".format(s.profile_type.monthly_price|float).replace(',', '.') if s.profile_type and s.profile_type.monthly_price else '-' }}</strong>
+    </a>
     {% endfor %}
+    {% if subs_pendientes > 8 %}
+    <a href="{{ url_for('reprocann.moderacion_suscripciones', status='pending') }}" class="nw-btn nw-btn-outline nw-btn-sm" style="margin-top:10px;">
+        Ver todos ({{ subs_pendientes }})
+    </a>
+    {% endif %}
     {% else %}
-    <p style="color:var(--nw-muted);">No hay pagos pendientes.</p>
+    <p style="color:var(--nw-muted); font-size:.88rem;">✅ No hay pagos pendientes.</p>
     {% endif %}
 </div>
 </div>
+</div>
+
+{# ═══════════ PRÓXIMOS VENCIMIENTOS + ACTIVIDAD ═══════════ #}
+<div class="row">
+<div class="col-lg-6">
+<div class="nw-card">
+    <h3 class="nw-card-title"><i class="bi bi-calendar-event icon"></i> Próximos vencimientos (7 días)</h3>
+    {% if proximos_vencimientos %}
+    {% for s in proximos_vencimientos %}
+    <a href="{{ url_for('reprocann.moderacion_usuario', user_id=s.user_id) }}"
+       style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--nw-border); text-decoration:none; color:inherit;">
+        <div>
+            <strong style="font-size:.88rem;">{{ s.user.username if s.user else '?' }}</strong>
+            <br>
+            <small style="color:var(--nw-muted);">{{ s.profile_type.name if s.profile_type else '' }}</small>
+        </div>
+        <div style="text-align:right;">
+            <strong style="font-size:.85rem; color:var(--nw-yellow);">{{ s.expires_at.strftime('%d/%m/%Y') }}</strong>
+        </div>
+    </a>
+    {% endfor %}
+    {% else %}
+    <p style="color:var(--nw-muted); font-size:.88rem;">No hay vencimientos próximos.</p>
+    {% endif %}
+</div>
+</div>
+
+<div class="col-lg-6">
+<div class="nw-card">
+    <h3 class="nw-card-title"><i class="bi bi-clock-history icon"></i> Últimos registros</h3>
+    {% if recent_signups %}
+    {% for p in recent_signups %}
+    <a href="{{ url_for('reprocann.moderacion_usuario', user_id=p.user_id) }}"
+       style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--nw-border); text-decoration:none; color:inherit;">
+        <div>
+            <strong style="font-size:.88rem;">{{ p.user.username if p.user else '?' }}</strong>
+            <span style="font-size:.7rem; color:var(--nw-muted); margin-left:6px;">
+                {{ p.profile_type.name if p.profile_type else '' }}
+            </span>
+            <br>
+            <small style="color:var(--nw-muted);">{{ p.created_at.strftime('%d/%m/%Y %H:%M') if p.created_at else '' }}</small>
+        </div>
+        {% if p.verification_status == 'verified' %}
+        <span class="nw-badge nw-badge-verified">✓</span>
+        {% else %}
+        <span class="nw-badge nw-badge-pending">Sin verificar</span>
+        {% endif %}
+    </a>
+    {% endfor %}
+    {% else %}
+    <p style="color:var(--nw-muted); font-size:.88rem;">No hay registros recientes.</p>
+    {% endif %}
+</div>
+</div>
+</div>
+
+{# Ingreso facturado del mes #}
+<div class="nw-card" style="display:flex; justify-content:space-between; align-items:center; padding:18px 22px;">
+    <div>
+        <div style="font-size:.75rem; color:var(--nw-muted); text-transform:uppercase; letter-spacing:.5px;">Ingreso facturado este mes</div>
+        <div style="font-size:1.5rem; font-weight:800; color:var(--nw-green); margin-top:2px;">
+            ${{ "{:,.0f}".format(ingresos_mes).replace(',', '.') }} ARS
+        </div>
+    </div>
+    <i class="bi bi-graph-up-arrow" style="font-size:2.2rem; color:var(--nw-green);"></i>
 </div>
 
 {% endblock %}

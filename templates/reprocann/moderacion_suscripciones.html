@@ -1,0 +1,104 @@
+{% extends "reprocann/_base.html" %}
+{% set active = 'moderacion' %}
+{% block title %}Suscripciones — Moderación{% endblock %}
+{% block content %}
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+    <div style="display:flex; gap:14px; align-items:center;">
+        <a href="{{ url_for('reprocann.moderacion') }}" class="nw-btn nw-btn-outline nw-btn-sm">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <div>
+            <h1 style="font-size:1.4rem; font-weight:700; margin:0;">Suscripciones</h1>
+            <p style="font-size:.85rem; color:var(--nw-muted); margin:2px 0 0;">{{ subs|length }} encontradas</p>
+        </div>
+    </div>
+</div>
+
+<div class="nw-card" style="margin-bottom:14px;">
+    <form method="GET" action="{{ url_for('reprocann.moderacion_suscripciones') }}">
+        <div class="row">
+            <div class="col-md-4 nw-form-group" style="margin-bottom:8px;">
+                <label class="nw-label">Tipo de perfil</label>
+                <select name="profile_type" class="nw-select" onchange="this.form.submit()">
+                    <option value="">Todos</option>
+                    {% for pt in profile_types %}
+                    <option value="{{ pt.code }}" {{ 'selected' if filtro_tipo==pt.code }}>{{ pt.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4 nw-form-group" style="margin-bottom:8px;">
+                <label class="nw-label">Estado</label>
+                <select name="status" class="nw-select" onchange="this.form.submit()">
+                    <option value="">Todos</option>
+                    <option value="pending"   {{ 'selected' if filtro_estado=='pending' }}>Pendientes</option>
+                    <option value="active"    {{ 'selected' if filtro_estado=='active' }}>Activas</option>
+                    <option value="expired"   {{ 'selected' if filtro_estado=='expired' }}>Vencidas</option>
+                    <option value="cancelled" {{ 'selected' if filtro_estado=='cancelled' }}>Canceladas</option>
+                </select>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="nw-card">
+{% if subs %}
+<table style="width:100%; font-size:.88rem;">
+    <thead style="font-size:.72rem; color:var(--nw-muted); text-transform:uppercase;">
+        <tr>
+            <th style="text-align:left; padding:10px 8px;">Usuario</th>
+            <th>Tipo de perfil</th>
+            <th style="text-align:right;">Monto</th>
+            <th>Estado</th>
+            <th>Inicio</th>
+            <th>Vence</th>
+            <th>Método</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for s in subs %}
+    <tr style="border-top:1px solid var(--nw-border);">
+        <td style="padding:10px 8px;">
+            <strong>{{ s.user.username if s.user else '?' }}</strong><br>
+            <small style="color:var(--nw-muted);">{{ s.user.full_name if s.user else '' }}</small>
+        </td>
+        <td>
+            {% if s.profile_type %}
+            <span class="nw-badge" style="background:{{ s.profile_type.color or '#eee' }}22; color:{{ s.profile_type.color or '#333' }};">
+                {{ s.profile_type.name }}
+            </span>
+            {% else %}-{% endif %}
+        </td>
+        <td style="text-align:right; font-weight:700; color:var(--nw-accent);">
+            ${{ "{:,.0f}".format(s.profile_type.monthly_price|float).replace(',', '.') if s.profile_type and s.profile_type.monthly_price else '-' }}
+        </td>
+        <td>
+            {% if s.status == 'active' %}<span class="nw-badge nw-badge-active">Activa</span>
+            {% elif s.status == 'pending' %}<span class="nw-badge nw-badge-pending">Pendiente</span>
+            {% elif s.status == 'expired' %}<span class="nw-badge nw-badge-expired">Vencida</span>
+            {% elif s.status == 'cancelled' %}<span class="nw-badge nw-badge-rejected">Cancelada</span>
+            {% else %}<span class="nw-badge">{{ s.status }}</span>
+            {% endif %}
+        </td>
+        <td style="font-size:.78rem; color:var(--nw-muted);">{{ s.starts_at.strftime('%d/%m/%Y') if s.starts_at else '-' }}</td>
+        <td style="font-size:.78rem; color:var(--nw-muted);">{{ s.expires_at.strftime('%d/%m/%Y') if s.expires_at else '-' }}</td>
+        <td style="font-size:.78rem; color:var(--nw-muted);">{{ s.payment_method or '-' }}</td>
+        <td style="text-align:right;">
+            <a href="{{ url_for('reprocann.moderacion_usuario', user_id=s.user_id) }}" class="nw-btn nw-btn-outline nw-btn-sm">
+                Gestionar <i class="bi bi-arrow-right"></i>
+            </a>
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p style="text-align:center; color:var(--nw-muted); padding:30px 0;">
+    <i class="bi bi-inbox" style="font-size:2rem; display:block; margin-bottom:8px;"></i>
+    No hay suscripciones con esos filtros.
+</p>
+{% endif %}
+</div>
+
+{% endblock %}

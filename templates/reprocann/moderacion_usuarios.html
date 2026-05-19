@@ -1,0 +1,107 @@
+{% extends "reprocann/_base.html" %}
+{% set active = 'moderacion' %}
+{% block title %}Usuarios — Moderación{% endblock %}
+{% block content %}
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+    <div style="display:flex; gap:14px; align-items:center;">
+        <a href="{{ url_for('reprocann.moderacion') }}" class="nw-btn nw-btn-outline nw-btn-sm">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <div>
+            <h1 style="font-size:1.4rem; font-weight:700; margin:0;">Usuarios</h1>
+            <p style="font-size:.85rem; color:var(--nw-muted); margin:2px 0 0;">{{ usuarios|length }} encontrados</p>
+        </div>
+    </div>
+</div>
+
+<div class="nw-card" style="margin-bottom:14px;">
+    <form method="GET" action="{{ url_for('reprocann.moderacion_usuarios') }}">
+        <div class="row">
+            <div class="col-md-4 nw-form-group" style="margin-bottom:8px;">
+                <label class="nw-label">Tipo de perfil</label>
+                <select name="profile_type" class="nw-select" onchange="this.form.submit()">
+                    <option value="">Todos</option>
+                    {% for pt in profile_types %}
+                    <option value="{{ pt.code }}" {{ 'selected' if filtro_tipo==pt.code }}>{{ pt.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4 nw-form-group" style="margin-bottom:8px;">
+                <label class="nw-label">Estado verificación</label>
+                <select name="status" class="nw-select" onchange="this.form.submit()">
+                    <option value="">Todos</option>
+                    <option value="pending"   {{ 'selected' if filtro_estado=='pending' }}>Pendientes</option>
+                    <option value="in_review" {{ 'selected' if filtro_estado=='in_review' }}>En revisión</option>
+                    <option value="verified"  {{ 'selected' if filtro_estado=='verified' }}>Verificados</option>
+                    <option value="rejected"  {{ 'selected' if filtro_estado=='rejected' }}>Rechazados</option>
+                </select>
+            </div>
+            <div class="col-md-4 nw-form-group" style="margin-bottom:8px;">
+                <label class="nw-label">Buscar</label>
+                <input type="text" name="q" class="nw-input" placeholder="Usuario, email, nombre o DNI" value="{{ filtro_q or '' }}">
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="nw-card">
+{% if usuarios %}
+<table style="width:100%; font-size:.88rem;">
+    <thead style="font-size:.72rem; color:var(--nw-muted); text-transform:uppercase;">
+        <tr>
+            <th style="text-align:left; padding:10px 8px;">Usuario</th>
+            <th>Tipo de perfil</th>
+            <th>DNI / CUIT</th>
+            <th>Provincia</th>
+            <th>Verificación</th>
+            <th>Registrado</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for p in usuarios %}
+    <tr style="border-top:1px solid var(--nw-border);">
+        <td style="padding:10px 8px;">
+            <strong>{{ p.user.username if p.user else '?' }}</strong><br>
+            <small style="color:var(--nw-muted);">{{ p.user.full_name if p.user else '' }}</small>
+        </td>
+        <td>
+            {% if p.profile_type %}
+            <span class="nw-badge" style="background:{{ p.profile_type.color or '#eee' }}22; color:{{ p.profile_type.color or '#333' }};">
+                {{ p.profile_type.name }}
+            </span>
+            {% else %}-{% endif %}
+        </td>
+        <td style="font-size:.82rem;">{{ p.dni or '-' }}</td>
+        <td style="font-size:.82rem;">{{ p.province or '-' }} {{ '/ ' + p.city if p.city else '' }}</td>
+        <td>
+            {% if p.verification_status == 'verified' %}
+            <span class="nw-badge nw-badge-verified">Verificado</span>
+            {% elif p.verification_status == 'in_review' %}
+            <span class="nw-badge nw-badge-review">En revisión</span>
+            {% elif p.verification_status == 'rejected' %}
+            <span class="nw-badge nw-badge-rejected">Rechazado</span>
+            {% else %}
+            <span class="nw-badge nw-badge-pending">Pendiente</span>
+            {% endif %}
+        </td>
+        <td style="font-size:.78rem; color:var(--nw-muted);">{{ p.created_at.strftime('%d/%m/%Y') if p.created_at else '-' }}</td>
+        <td style="text-align:right;">
+            <a href="{{ url_for('reprocann.moderacion_usuario', user_id=p.user_id) }}" class="nw-btn nw-btn-outline nw-btn-sm">
+                Ver <i class="bi bi-arrow-right"></i>
+            </a>
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p style="text-align:center; color:var(--nw-muted); padding:30px 0;">
+    <i class="bi bi-inbox" style="font-size:2rem; display:block; margin-bottom:8px;"></i>
+    No se encontraron usuarios con esos filtros.
+</p>
+{% endif %}
+</div>
+
+{% endblock %}

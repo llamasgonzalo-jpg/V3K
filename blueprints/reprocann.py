@@ -217,9 +217,9 @@ def registro():
 @login_required
 def post_login_redirect():
     """Decide a qué panel mandar al usuario según su perfil."""
-    # Admin → panel industrial (Empresa)
+    # Admin → panel de moderación (su dashboard real en V3K Network)
     if current_user.role and current_user.role.name == 'Administrador':
-        return redirect(url_for('main.dashboard'))
+        return redirect(url_for('reprocann.moderacion'))
     profile = UserProfile.query.filter_by(user_id=current_user.id).first()
     if not profile or not profile.profile_type:
         return redirect(url_for('reprocann.perfil'))
@@ -749,18 +749,123 @@ def reporte_rpcci_pdf():
 @login_required
 @moderator_required
 def moderacion():
-    # Usuarios pendientes de verificación
-    pendientes = UserProfile.query.filter(UserProfile.verification_status.in_(['pending', 'in_review'])).all()
-    # Suscripciones pendientes
-    subs_pendientes = Subscription.query.filter_by(status='pending').all()
-    # Estadísticas
-    total_cultivadores = UserProfile.query.filter(UserProfile.profile_type.has(code='cultivador_reprocann')).count()
-    verificados = UserProfile.query.filter_by(verification_status='verified').count()
-    activos = Subscription.query.filter_by(status='active').count()
+    now = datetime.now(timezone.utc)
+    seven_days = now + timedelta(days=7)
+
+    # ── Conteos por tipo de perfil ──
+    profile_types = ProfileType.query.filter(ProfileType.code != 'moderador_v3k').all()
+    stats_by_type = []
+    for pt in profile_types:
+        count = UserProfile.query.filter_by(profile_type_id=pt.id).count()
+        stats_by_type.append({
+            'code':  pt.code,
+            'name':  pt.name,
+            'price': float(pt.monthly_price or 0),
+            'icon':  pt.icon or 'bi-person',
+            'color': pt.color or '#1a8fd1',
+            'count': count,
+        })
+
+    # ── Conteos de verificación ──
+    total_usuarios = UserProfile.query.count()
+    verificados    = UserProfile.query.filter_by(verification_status='verified').count()
+    pendientes_ver = UserProfile.query.filter(UserProfile.verification_status.in_(['pending', 'in_review'])).count()
+    rechazados     = UserProfile.query.filter_by(verification_status='rejected').count()
+
+    # ── Conteos de suscripción ──
+    subs_activas    = Subscription.query.filter_by(status='active').count()
+    subs_pendientes = Subscription.query.filter_by(status='pending').count()
+    subs_vencidas   = Subscription.query.filter_by(status='expired').count()
+    subs_canceladas = Subscription.query.filter_by(status='cancelled').count()
+
+    # ── Ingresos esperados (suma del precio del ProfileType de cada suscripción activa) ──
+    ingresos_mensuales = db.session.query(
+        db.func.coalesce(db.func.sum(ProfileType.monthly_price), 0)
+    ).select_from(Subscription).join(ProfileType, Subscription.profile_type_id == ProfileType.id)\
+     .filter(Subscription.status == 'active').scalar() or 0
+
+    # Pagos del mes corriente (cobrado real)
+    inicio_mes = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    ingresos_mes = db.session.query(db.func.coalesce(db.func.sum(Subscription.last_payment_amount), 0))\
+        .filter(Subscription.last_payment_at >= inicio_mes).scalar() or 0
+
+    # ── Listas urgentes ──
+    pendientes = UserProfile.query.filter(UserProfile.verification_status.in_(['pending', 'in_review']))\
+                 .order_by(UserProfile.created_at.desc()).limit(8).all()
+    subs_a_cobrar = Subscription.query.filter_by(status='pending')\
+                    .order_by(Subscription.created_at.desc()).limit(8).all()
+    proximos_vencimientos = Subscription.query.filter(
+        Subscription.status == 'active',
+        Subscription.expires_at != None,
+        Subscription.expires_at <= seven_days
+    ).order_by(Subscription.expires_at.asc()).limit(8).all()
+
+    # ── Registros recientes (últimas semanas) ──
+    recent_signups = UserProfile.query.order_by(UserProfile.created_at.desc()).limit(8).all()
+
     return render_template('reprocann/moderacion.html',
-                           pendientes=pendientes, subs_pendientes=subs_pendientes,
-                           total_cultivadores=total_cultivadores,
-                           verificados=verificados, activos=activos)
+        stats_by_type=stats_by_type,
+        total_usuarios=total_usuarios,
+        verificados=verificados, pendientes_ver=pendientes_ver, rechazados=rechazados,
+        subs_activas=subs_activas, subs_pendientes=subs_pendientes,
+        subs_vencidas=subs_vencidas, subs_canceladas=subs_canceladas,
+        ingresos_mensuales=float(ingresos_mensuales),
+        ingresos_mes=float(ingresos_mes),
+        pendientes=pendientes, subs_a_cobrar=subs_a_cobrar,
+        proximos_vencimientos=proximos_vencimientos,
+        recent_signups=recent_signups,
+    )
+
+# ── Listado de usuarios con filtros ──
+
+@reprocann_bp.route('/moderacion/usuarios')
+@login_required
+@moderator_required
+def moderacion_usuarios():
+    profile_type = request.args.get('profile_type', '')
+    status       = request.args.get('status', '')  # verification status
+    q            = request.args.get('q', '').strip()
+
+    query = UserProfile.query.join(User, UserProfile.user_id == User.id)\
+                             .outerjoin(ProfileType, UserProfile.profile_type_id == ProfileType.id)
+    if profile_type:
+        query = query.filter(ProfileType.code == profile_type)
+    if status:
+        query = query.filter(UserProfile.verification_status == status)
+    if q:
+        like = f'%{q}%'
+        query = query.filter(db.or_(User.username.ilike(like), User.email.ilike(like),
+                                    User.full_name.ilike(like), UserProfile.dni.ilike(like)))
+
+    usuarios = query.order_by(UserProfile.created_at.desc()).all()
+    profile_types = ProfileType.query.filter(ProfileType.code != 'moderador_v3k').all()
+
+    return render_template('reprocann/moderacion_usuarios.html',
+                           usuarios=usuarios, profile_types=profile_types,
+                           filtro_tipo=profile_type, filtro_estado=status, filtro_q=q)
+
+# ── Listado de suscripciones con filtros ──
+
+@reprocann_bp.route('/moderacion/suscripciones')
+@login_required
+@moderator_required
+def moderacion_suscripciones():
+    status = request.args.get('status', '')
+    profile_type = request.args.get('profile_type', '')
+
+    query = Subscription.query.join(User, Subscription.user_id == User.id)\
+                              .outerjoin(ProfileType, Subscription.profile_type_id == ProfileType.id)
+    if status:
+        query = query.filter(Subscription.status == status)
+    if profile_type:
+        query = query.filter(ProfileType.code == profile_type)
+
+    subs = query.order_by(Subscription.created_at.desc()).all()
+    profile_types = ProfileType.query.filter(ProfileType.code != 'moderador_v3k').all()
+
+    return render_template('reprocann/moderacion_suscripciones.html',
+                           subs=subs, profile_types=profile_types,
+                           filtro_estado=status, filtro_tipo=profile_type)
 
 @reprocann_bp.route('/moderacion/usuario/<int:user_id>')
 @login_required

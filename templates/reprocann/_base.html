@@ -34,11 +34,17 @@
         {% endif %}
         {% if is_admin or is_moderator %}
         <a href="{{ url_for('reprocann.moderacion') }}" class="nw-nav-link {% if active=='moderacion' %}active{% endif %}">
-            <i class="bi bi-shield-check"></i> Moderación
+            <i class="bi bi-speedometer2"></i> Panel
+        </a>
+        <a href="{{ url_for('reprocann.moderacion_usuarios') }}" class="nw-nav-link">
+            <i class="bi bi-people"></i> Usuarios
+        </a>
+        <a href="{{ url_for('reprocann.moderacion_suscripciones') }}" class="nw-nav-link">
+            <i class="bi bi-cash-stack"></i> Suscripciones
         </a>
         {% if is_admin %}
-        <a href="{{ url_for('main.dashboard') }}" class="nw-nav-link">
-            <i class="bi bi-arrow-left"></i> Volver al sistema
+        <a href="{{ url_for('main.dashboard') }}" class="nw-nav-link" style="margin-left:auto; color:var(--nw-muted);">
+            <i class="bi bi-building"></i> Sistema industrial
         </a>
         {% endif %}
         {% endif %}
