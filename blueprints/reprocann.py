@@ -44,18 +44,38 @@ def subscription_active_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         sub = Subscription.query.filter_by(user_id=current_user.id).first()
-        # Moderadores siempre pasan
+        # Moderadores y admin siempre pasan
         profile = UserProfile.query.filter_by(user_id=current_user.id).first()
         if profile and profile.profile_type and profile.profile_type.code == 'moderador_v3k':
             return f(*args, **kwargs)
+        if current_user.role and current_user.role.name == 'Administrador':
+            return f(*args, **kwargs)
+
+        # Auto-activar trial 7 días si nunca activó
+        if sub and sub.status == 'pending' and not sub.starts_at:
+            now = utcnow()
+            sub.status = 'active'
+            sub.starts_at = now
+            sub.expires_at = now + timedelta(days=7)
+            sub.payment_method = 'trial'
+            sub.notes = 'Trial gratuito 7 días activado automáticamente'
+            db.session.commit()
+            flash('¡Te activamos un trial gratuito de 7 días para que pruebes V3K Network!', 'success')
+
         if not sub or sub.status != 'active':
             flash('Tu suscripción no está activa. Comunicate con el administrador.', 'warning')
             return redirect(url_for('reprocann.dashboard'))
-        if sub.expires_at and sub.expires_at < datetime.now(timezone.utc):
-            sub.status = 'expired'
-            db.session.commit()
-            flash('Tu suscripción venció. Renová para seguir operando.', 'danger')
-            return redirect(url_for('reprocann.dashboard'))
+
+        # Comparar vencimiento con manejo seguro de timezone
+        if sub.expires_at:
+            expires = sub.expires_at
+            if expires.tzinfo is None:
+                expires = expires.replace(tzinfo=timezone.utc)
+            if expires < datetime.now(timezone.utc):
+                sub.status = 'expired'
+                db.session.commit()
+                flash('Tu suscripción venció. Renová para seguir operando.', 'danger')
+                return redirect(url_for('reprocann.dashboard'))
         return f(*args, **kwargs)
     return decorated
 
