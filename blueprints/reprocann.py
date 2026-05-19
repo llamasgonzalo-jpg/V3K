@@ -190,10 +190,15 @@ def registro():
         )
         db.session.add(profile)
 
-        # Suscripción en pending
+        # Trial gratuito de 7 días al registrarse
+        now = utcnow()
         sub = Subscription(
             user_id=u.id, profile_type_id=pt.id if pt else None,
-            status='pending'
+            status='active',
+            starts_at=now,
+            expires_at=now + timedelta(days=7),
+            payment_method='trial',
+            notes='Trial gratuito de 7 días otorgado al registrarse'
         )
         db.session.add(sub)
 
@@ -217,6 +222,17 @@ def registro():
 @login_required
 def post_login_redirect():
     """Decide a qué panel mandar al usuario según su perfil."""
+    # Auto-activación de trial 7 días si el usuario nunca tuvo activación
+    sub = Subscription.query.filter_by(user_id=current_user.id).first()
+    if sub and sub.status == 'pending' and not sub.starts_at:
+        now = utcnow()
+        sub.status = 'active'
+        sub.starts_at = now
+        sub.expires_at = now + timedelta(days=7)
+        sub.payment_method = 'trial'
+        sub.notes = 'Trial gratuito 7 días activado automáticamente'
+        db.session.commit()
+
     # Admin → panel de moderación (su dashboard real en V3K Network)
     if current_user.role and current_user.role.name == 'Administrador':
         return redirect(url_for('reprocann.moderacion'))

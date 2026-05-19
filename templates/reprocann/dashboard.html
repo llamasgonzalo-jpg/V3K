@@ -33,16 +33,32 @@
 </div>
 {% endif %}
 
-{% if not subscription or subscription.status != 'active' %}
+{% if not subscription or subscription.status == 'pending' %}
 <div class="nw-alert nw-alert-info">
     <i class="bi bi-credit-card"></i>
     <div style="flex:1;">
-        <strong>Suscripción {{ 'pendiente' if not subscription or subscription.status=='pending' else 'vencida' }}.</strong>
-        Para registrar nuevos cultivos y eventos necesitás suscripción activa ($5.000/mes).
-        Un administrador la activará tras confirmar el pago.
+        <strong>Activá tu cuenta.</strong>
+        Para empezar a usar V3K Network necesitás iniciar tu suscripción. Pedí al administrador que te active el trial gratuito de 7 días.
     </div>
 </div>
-{% else %}
+{% elif subscription.status == 'expired' or (subscription.expires_at and subscription.expires_at.replace(tzinfo=None) < now.replace(tzinfo=None)) %}
+<div class="nw-alert nw-alert-danger">
+    <i class="bi bi-exclamation-octagon"></i>
+    <div style="flex:1;">
+        <strong>Tu suscripción venció.</strong>
+        Comunicate con el administrador para renovarla ($5.000/mes) y seguir registrando cultivos.
+    </div>
+</div>
+{% elif subscription.status == 'active' and subscription.payment_method == 'trial' %}
+{% set dias = ((subscription.expires_at.replace(tzinfo=None) - now.replace(tzinfo=None)).days) if subscription.expires_at else 0 %}
+<div class="nw-alert nw-alert-info" style="background:#ede9fe; border-color:#c4b5fd; color:#5b21b6;">
+    <i class="bi bi-stars"></i>
+    <div style="flex:1;">
+        <strong>Trial gratuito activo</strong> — te quedan <strong>{{ dias }} día{{ 's' if dias != 1 else '' }}</strong> de prueba.
+        Al vencer, contactá al administrador para suscribirte ($5.000/mes).
+    </div>
+</div>
+{% elif subscription.status == 'active' %}
 <div class="nw-alert nw-alert-success">
     <i class="bi bi-check-circle"></i>
     Suscripción activa hasta el <strong>{{ subscription.expires_at.strftime('%d/%m/%Y') if subscription.expires_at else '-' }}</strong>
