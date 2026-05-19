@@ -1,0 +1,104 @@
+{#
+  Include reutilizable de tarjeta de post.
+  Variables esperadas:
+    p = el post (Post)
+    liked_ids = set de IDs de posts que liked el usuario actual
+#}
+<article class="post-card" id="post-{{ p.id }}">
+  <header class="post-header">
+    <a href="{{ url_for('reprocann.profile_public', username=p.author.username) }}" class="post-avatar">
+      {{ p.author.username[0]|upper }}
+    </a>
+    <div class="post-author">
+      <a href="{{ url_for('reprocann.profile_public', username=p.author.username) }}">
+        {{ p.author.full_name or p.author.username }}
+      </a>
+      {% set ap = p.author.profile if p.author.profile else none %}
+      {% if ap and ap.verification_status == 'verified' %}
+      <i class="bi bi-patch-check-fill post-verified" title="Verificado"></i>
+      {% endif %}
+      {% if ap and ap.profile_type %}
+      <span class="badge-verified-inline" style="background:{{ ap.profile_type.color or '#1a8fd1' }}22; color:{{ ap.profile_type.color or '#1a8fd1' }};">
+        {{ ap.profile_type.name }}
+      </span>
+      {% endif %}
+      <div class="post-meta">
+        {{ p.created_at.strftime('%d/%m/%Y %H:%M') if p.created_at else '' }}
+        {% if p.visibility == 'public' %}<span class="dot">·</span> <i class="bi bi-globe2" title="Público"></i>
+        {% elif p.visibility == 'followers' %}<span class="dot">·</span> <i class="bi bi-people" title="Solo seguidores"></i>
+        {% elif p.visibility == 'private' %}<span class="dot">·</span> <i class="bi bi-lock" title="Privado"></i>
+        {% endif %}
+        {% if p.moderation_status == 'pending' %}<span class="dot">·</span> <span style="color:var(--nw-yellow);">En revisión</span>{% endif %}
+      </div>
+    </div>
+    <div class="dropdown">
+      <button class="post-menu" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></button>
+      <ul class="dropdown-menu dropdown-menu-end" style="font-size:.85rem;">
+        {% if p.author_user_id == current_user.id %}
+        <li>
+          <form method="POST" action="{{ url_for('reprocann.post_delete', id=p.id) }}"
+                onsubmit="return confirm('¿Eliminar tu publicación?')" style="margin:0;">
+            <button class="dropdown-item text-danger"><i class="bi bi-trash"></i> Eliminar</button>
+          </form>
+        </li>
+        {% else %}
+        <li>
+          <form method="POST" action="{{ url_for('reprocann.post_report', id=p.id) }}" style="margin:0;">
+            <button class="dropdown-item"><i class="bi bi-flag"></i> Reportar</button>
+          </form>
+        </li>
+        {% endif %}
+        <li><a class="dropdown-item" href="{{ url_for('reprocann.post_detail', id=p.id) }}">
+          <i class="bi bi-link-45deg"></i> Ver publicación
+        </a></li>
+      </ul>
+    </div>
+  </header>
+
+  {% if p.body %}
+  <div class="post-body">{{ p.body }}</div>
+  {% endif %}
+
+  {% if p.media %}
+  <div class="post-media-grid {{ 'one' if p.media|length==1 else 'two' if p.media|length==2 else 'three' if p.media|length==3 else 'four' }}">
+    {% for m in p.media %}
+    <a href="{{ url_for('reprocann.feed_file', filename=m.file_path) }}" target="_blank">
+      <img src="{{ url_for('reprocann.feed_file', filename=m.file_path) }}" alt="">
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if p.related_cultivo %}
+  <a href="{{ url_for('reprocann.cultivo_detail', id=p.related_cultivo.id) }}"
+     style="margin:8px 16px; padding:10px 12px; background:var(--nw-accent-lt); border-radius:8px; display:block; text-decoration:none; color:var(--nw-text);">
+    <small style="color:var(--nw-accent); text-transform:uppercase; font-size:.7rem; font-weight:600;">
+      <i class="bi bi-flower1"></i> Cultivo asociado
+    </small>
+    <div style="font-weight:600; font-size:.88rem;">{{ p.related_cultivo.name }}</div>
+    <small style="color:var(--nw-muted);">{{ p.related_cultivo.variety or '' }} · {{ p.related_cultivo.stage or '' }}</small>
+  </a>
+  {% endif %}
+
+  {% if (p.likes_count or 0) > 0 or (p.comments_count or 0) > 0 %}
+  <div class="post-stats">
+    <span>{% if p.likes_count %}❤️ {{ p.likes_count }}{% endif %}</span>
+    <span>{% if p.comments_count %}{{ p.comments_count }} comentario{{ 's' if p.comments_count != 1 else '' }}{% endif %}</span>
+  </div>
+  {% endif %}
+
+  <div class="post-actions">
+    <form method="POST" action="{{ url_for('reprocann.post_like', id=p.id) }}" style="flex:1; margin:0;">
+      <button class="post-action {{ 'liked' if liked_ids and p.id in liked_ids }}">
+        <i class="bi bi-heart{{ '-fill' if liked_ids and p.id in liked_ids }}"></i>
+        {{ 'Te gusta' if liked_ids and p.id in liked_ids else 'Me gusta' }}
+      </button>
+    </form>
+    <a href="{{ url_for('reprocann.post_detail', id=p.id) }}#comments" class="post-action">
+      <i class="bi bi-chat"></i> Comentar
+    </a>
+    <a href="{{ url_for('reprocann.post_detail', id=p.id) }}" class="post-action">
+      <i class="bi bi-eye"></i> Ver
+    </a>
+  </div>
+</article>

@@ -1129,3 +1129,86 @@ class ReprocannHarvest(db.Model):
     notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=utcnow)
 
+# ═══════════════════════════════════════════════════════════════
+#  V3K NETWORK — Red social (Fase 2)
+# ═══════════════════════════════════════════════════════════════
+
+class Post(db.Model):
+    __tablename__ = 'posts'
+    id = db.Column(db.Integer, primary_key=True)
+    author_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    # text, cultivo_update, harvest, batch_release, lab_result, new_variety, milestone
+    post_type = db.Column(db.String(40), default='text')
+    related_cultivo_id  = db.Column(db.Integer, db.ForeignKey('reprocann_cultivos.id'))
+    related_harvest_id  = db.Column(db.Integer, db.ForeignKey('reprocann_harvests.id'))
+    visibility = db.Column(db.String(20), default='public')  # public / followers / private
+    moderation_status = db.Column(db.String(20), default='approved')  # pending / approved / rejected
+    moderated_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    moderated_at = db.Column(db.DateTime)
+    likes_count    = db.Column(db.Integer, default=0)
+    comments_count = db.Column(db.Integer, default=0)
+    deleted_at = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
+
+    author = db.relationship('User', foreign_keys=[author_user_id], backref='posts')
+    media = db.relationship('PostMedia', backref='post', cascade='all, delete-orphan',
+                            order_by='PostMedia.order')
+    comments = db.relationship('Comment', backref='post', cascade='all, delete-orphan',
+                               order_by='Comment.created_at')
+    likes = db.relationship('PostLike', backref='post', cascade='all, delete-orphan')
+    related_cultivo = db.relationship('ReprocannCultivo', foreign_keys=[related_cultivo_id])
+    related_harvest = db.relationship('ReprocannHarvest', foreign_keys=[related_harvest_id])
+
+class PostMedia(db.Model):
+    __tablename__ = 'post_media'
+    id = db.Column(db.Integer, primary_key=True)
+    post_id = db.Column(db.Integer, db.ForeignKey('posts.id'), nullable=False)
+    file_path = db.Column(db.String(500), nullable=False)
+    mime_type = db.Column(db.String(80))
+    width = db.Column(db.Integer)
+    height = db.Column(db.Integer)
+    order = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=utcnow)
+
+class Comment(db.Model):
+    __tablename__ = 'post_comments'
+    id = db.Column(db.Integer, primary_key=True)
+    post_id = db.Column(db.Integer, db.ForeignKey('posts.id'), nullable=False)
+    author_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    body = db.Column(db.String(500), nullable=False)
+    parent_comment_id = db.Column(db.Integer, db.ForeignKey('post_comments.id'))
+    deleted_at = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=utcnow)
+
+    author = db.relationship('User', foreign_keys=[author_user_id])
+
+class PostLike(db.Model):
+    __tablename__ = 'post_likes'
+    id = db.Column(db.Integer, primary_key=True)
+    post_id = db.Column(db.Integer, db.ForeignKey('posts.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    __table_args__ = (db.UniqueConstraint('post_id', 'user_id', name='uq_post_like'),)
+
+class Follow(db.Model):
+    __tablename__ = 'follows'
+    id = db.Column(db.Integer, primary_key=True)
+    follower_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    followee_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    __table_args__ = (db.UniqueConstraint('follower_user_id', 'followee_user_id', name='uq_follow'),)
+
+    follower = db.relationship('User', foreign_keys=[follower_user_id], backref='following_rel')
+    followee = db.relationship('User', foreign_keys=[followee_user_id], backref='followers_rel')
+
+class PostReport(db.Model):
+    __tablename__ = 'post_reports'
+    id = db.Column(db.Integer, primary_key=True)
+    post_id = db.Column(db.Integer, db.ForeignKey('posts.id'), nullable=False)
+    reporter_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    reason = db.Column(db.String(200))
+    status = db.Column(db.String(20), default='pending')  # pending / dismissed / actioned
+    created_at = db.Column(db.DateTime, default=utcnow)
+

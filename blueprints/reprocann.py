@@ -14,7 +14,9 @@ from werkzeug.utils import secure_filename
 
 from models import (db, User, Role, ProfileType, UserProfile, Subscription,
                     VerificationDocument, ReprocannCultivo, ReprocannEvent,
-                    ReprocannHarvest, AuditLog)
+                    ReprocannHarvest, AuditLog,
+                    Post, PostMedia, Comment, PostLike, Follow, PostReport,
+                    Notification)
 
 reprocann_bp = Blueprint('reprocann', __name__,
                          template_folder='../templates/reprocann',
@@ -253,21 +255,17 @@ def post_login_redirect():
         sub.notes = 'Trial gratuito 7 días activado automáticamente'
         db.session.commit()
 
-    # Admin → panel de moderación (su dashboard real en V3K Network)
+    # Admin → panel de moderación
     if current_user.role and current_user.role.name == 'Administrador':
         return redirect(url_for('reprocann.moderacion'))
     profile = UserProfile.query.filter_by(user_id=current_user.id).first()
     if not profile or not profile.profile_type:
         return redirect(url_for('reprocann.perfil'))
-    code = profile.profile_type.code
-    if code == 'cultivador_reprocann':
-        return redirect(url_for('reprocann.dashboard'))
-    if code == 'moderador_v3k':
+    # Moderador → moderación
+    if profile.profile_type.code == 'moderador_v3k':
         return redirect(url_for('reprocann.moderacion'))
-    if code == 'empresa':
-        return redirect(url_for('main.dashboard'))
-    # ONG / Fitomejorador / Laboratorio → panel placeholder
-    return redirect(url_for('reprocann.proximamente', tipo=code))
+    # Resto → feed social (LinkedIn-style)
+    return redirect(url_for('reprocann.feed'))
 
 @reprocann_bp.route('/proximamente/<tipo>')
 @login_required
@@ -983,3 +981,402 @@ def moderacion_desactivar(user_id):
     db.session.commit()
     flash('Suscripción cancelada.', 'warning')
     return redirect(url_for('reprocann.moderacion_usuario', user_id=user_id))
+
+# ═══════════════════════════════════════════════════════════════
+#  V3K NETWORK — Red social (Fase 2)
+# ═══════════════════════════════════════════════════════════════
+
+def _is_verified(user_id):
+    p = UserProfile.query.filter_by(user_id=user_id).first()
+    return bool(p and p.verification_status == 'verified')
+
+def _is_moderator(user):
+    if not user or not user.is_authenticated:
+        return False
+    if user.role and user.role.name == 'Administrador':
+        return True
+    profile = UserProfile.query.filter_by(user_id=user.id).first()
+    return bool(profile and profile.profile_type and profile.profile_type.code == 'moderador_v3k')
+
+def _save_post_image(file, user_id):
+    """Guarda imagen del post y devuelve la ruta relativa."""
+    ext = (file.filename.rsplit('.', 1)[-1] or '').lower()
+    if ext not in {'png', 'jpg', 'jpeg', 'webp', 'gif'}:
+        return None
+    upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'network', str(user_id), 'posts')
+    os.makedirs(upload_dir, exist_ok=True)
+    fname = f"p_{uuid.uuid4().hex[:12]}.{ext}"
+    fpath = os.path.join(upload_dir, fname)
+    file.save(fpath)
+    return os.path.join('network', str(user_id), 'posts', fname)
+
+def _user_follows(follower_id, followee_id):
+    return Follow.query.filter_by(follower_user_id=follower_id, followee_user_id=followee_id).first() is not None
+
+def _user_liked_post(user_id, post_id):
+    return PostLike.query.filter_by(user_id=user_id, post_id=post_id).first() is not None
+
+def _network_uploads(filename):
+    """Sirve archivos del feed (públicos para usuarios logueados)."""
+    return send_from_directory(current_app.config['UPLOAD_FOLDER'], filename)
+
+@reprocann_bp.route('/feed-uploads/<path:filename>')
+@login_required
+def feed_file(filename):
+    return _network_uploads(filename)
+
+# ── Feed principal ────────────────────────────────────────────
+
+@reprocann_bp.route('/feed')
+@login_required
+def feed():
+    # Usuarios que sigo
+    following_ids = [f.followee_user_id for f in Follow.query.filter_by(follower_user_id=current_user.id).all()]
+    following_ids.append(current_user.id)  # incluir mis propios posts
+
+    # Posts del feed: mis posts + de gente que sigo + posts públicos populares
+    base_q = Post.query.filter(
+        Post.deleted_at.is_(None),
+        Post.moderation_status == 'approved'
+    )
+
+    # Si no sigo a nadie, mostrar todos los públicos (descubrimiento)
+    if len(following_ids) > 1:
+        feed_posts = base_q.filter(
+            db.or_(
+                Post.author_user_id.in_(following_ids),
+                Post.visibility == 'public'
+            )
+        ).order_by(Post.created_at.desc()).limit(30).all()
+    else:
+        feed_posts = base_q.filter(Post.visibility == 'public')\
+                           .order_by(Post.created_at.desc()).limit(30).all()
+
+    # Marcar posts liked por mí
+    liked_ids = {pl.post_id for pl in PostLike.query.filter_by(user_id=current_user.id).all()}
+
+    # Sugerencias a seguir: mismo perfil + provincia, recientemente verificados, etc.
+    profile = UserProfile.query.filter_by(user_id=current_user.id).first()
+    already_following = set(following_ids)
+    suggestions_q = User.query.join(UserProfile, UserProfile.user_id == User.id)\
+                              .filter(User.id != current_user.id,
+                                      ~User.id.in_(already_following),
+                                      User.is_active == True,
+                                      UserProfile.verification_status == 'verified')
+    if profile and profile.province:
+        suggestions_q = suggestions_q.order_by(
+            db.case((UserProfile.province == profile.province, 0), else_=1),
+            User.created_at.desc()
+        )
+    else:
+        suggestions_q = suggestions_q.order_by(User.created_at.desc())
+    suggestions = suggestions_q.limit(5).all()
+
+    # Mi perfil para la sidebar
+    my_profile = profile
+    my_stats = {
+        'posts':     Post.query.filter_by(author_user_id=current_user.id, deleted_at=None).count(),
+        'followers': Follow.query.filter_by(followee_user_id=current_user.id).count(),
+        'following': Follow.query.filter_by(follower_user_id=current_user.id).count(),
+    }
+
+    return render_template('reprocann/feed.html',
+        posts=feed_posts, liked_ids=liked_ids,
+        suggestions=suggestions, my_profile=my_profile, my_stats=my_stats)
+
+# ── Crear post ───────────────────────────────────────────────
+
+@reprocann_bp.route('/posts/crear', methods=['POST'])
+@login_required
+def post_create():
+    body = (request.form.get('body') or '').strip()
+    visibility = request.form.get('visibility', 'public')
+    if visibility not in ('public', 'followers', 'private'):
+        visibility = 'public'
+    if not body and not request.files.getlist('photos'):
+        flash('El post no puede estar vacío.', 'warning')
+        return redirect(request.referrer or url_for('reprocann.feed'))
+
+    # Estado de moderación: usuarios verificados publican directo
+    mod_status = 'approved' if _is_verified(current_user.id) else 'pending'
+
+    p = Post(
+        author_user_id=current_user.id, body=body,
+        post_type='text', visibility=visibility,
+        moderation_status=mod_status
+    )
+    db.session.add(p)
+    db.session.flush()
+
+    # Fotos opcionales
+    photos = request.files.getlist('photos')
+    for i, photo in enumerate(photos[:4]):  # máximo 4 fotos
+        if photo and photo.filename:
+            rel = _save_post_image(photo, current_user.id)
+            if rel:
+                db.session.add(PostMedia(post_id=p.id, file_path=rel, order=i,
+                                         mime_type=photo.mimetype))
+
+    db.session.commit()
+    if mod_status == 'pending':
+        flash('Tu publicación está en revisión por moderación. Aparecerá cuando se apruebe.', 'info')
+    else:
+        flash('¡Publicación creada!', 'success')
+    return redirect(url_for('reprocann.feed'))
+
+# ── Ver post individual ──────────────────────────────────────
+
+@reprocann_bp.route('/posts/<int:id>')
+@login_required
+def post_detail(id):
+    p = Post.query.filter_by(id=id, deleted_at=None).first_or_404()
+    # Privacidad
+    if p.visibility == 'private' and p.author_user_id != current_user.id and not _is_moderator(current_user):
+        abort(403)
+    if p.visibility == 'followers' and p.author_user_id != current_user.id and \
+       not _user_follows(current_user.id, p.author_user_id) and not _is_moderator(current_user):
+        abort(403)
+
+    liked = _user_liked_post(current_user.id, p.id)
+    comments = Comment.query.filter_by(post_id=p.id, deleted_at=None).order_by(Comment.created_at).all()
+
+    return render_template('reprocann/post_detail.html', post=p, liked=liked, comments=comments)
+
+# ── Like / Unlike ────────────────────────────────────────────
+
+@reprocann_bp.route('/posts/<int:id>/like', methods=['POST'])
+@login_required
+def post_like(id):
+    p = Post.query.get_or_404(id)
+    existing = PostLike.query.filter_by(post_id=p.id, user_id=current_user.id).first()
+    if existing:
+        db.session.delete(existing)
+        p.likes_count = max(0, (p.likes_count or 0) - 1)
+        liked = False
+    else:
+        db.session.add(PostLike(post_id=p.id, user_id=current_user.id))
+        p.likes_count = (p.likes_count or 0) + 1
+        liked = True
+        # Notificación al autor (si no es uno mismo)
+        if p.author_user_id != current_user.id:
+            db.session.add(Notification(
+                user_id=p.author_user_id,
+                title=f'A {current_user.username} le gustó tu publicación',
+                message=(p.body or '')[:80],
+                type='social_like',
+            ))
+    db.session.commit()
+    if request.is_json or request.args.get('json'):
+        return jsonify({'liked': liked, 'likes_count': p.likes_count})
+    return redirect(request.referrer or url_for('reprocann.feed'))
+
+# ── Comentar ─────────────────────────────────────────────────
+
+@reprocann_bp.route('/posts/<int:id>/comentar', methods=['POST'])
+@login_required
+def post_comment(id):
+    p = Post.query.get_or_404(id)
+    body = (request.form.get('body') or '').strip()
+    if not body:
+        flash('El comentario no puede estar vacío.', 'warning')
+        return redirect(request.referrer or url_for('reprocann.post_detail', id=p.id))
+    if len(body) > 500:
+        body = body[:500]
+    c = Comment(post_id=p.id, author_user_id=current_user.id, body=body)
+    db.session.add(c)
+    p.comments_count = (p.comments_count or 0) + 1
+    # Notificación al autor del post
+    if p.author_user_id != current_user.id:
+        db.session.add(Notification(
+            user_id=p.author_user_id,
+            title=f'{current_user.username} comentó tu publicación',
+            message=body[:120],
+            type='social_comment',
+        ))
+    db.session.commit()
+    return redirect(request.referrer or url_for('reprocann.post_detail', id=p.id))
+
+# ── Eliminar post (autor o mod) ──────────────────────────────
+
+@reprocann_bp.route('/posts/<int:id>/eliminar', methods=['POST'])
+@login_required
+def post_delete(id):
+    p = Post.query.get_or_404(id)
+    if p.author_user_id != current_user.id and not _is_moderator(current_user):
+        abort(403)
+    p.deleted_at = utcnow()
+    db.session.commit()
+    flash('Publicación eliminada.', 'info')
+    return redirect(request.referrer or url_for('reprocann.feed'))
+
+# ── Reportar post ────────────────────────────────────────────
+
+@reprocann_bp.route('/posts/<int:id>/reportar', methods=['POST'])
+@login_required
+def post_report(id):
+    p = Post.query.get_or_404(id)
+    reason = (request.form.get('reason') or '').strip()[:200]
+    existing = PostReport.query.filter_by(post_id=p.id, reporter_user_id=current_user.id,
+                                           status='pending').first()
+    if existing:
+        flash('Ya reportaste esta publicación.', 'info')
+    else:
+        db.session.add(PostReport(post_id=p.id, reporter_user_id=current_user.id, reason=reason))
+        db.session.commit()
+        flash('Reportado. Un moderador revisará la publicación.', 'success')
+    return redirect(request.referrer or url_for('reprocann.feed'))
+
+# ── Follow / Unfollow ────────────────────────────────────────
+
+@reprocann_bp.route('/u/<username>/seguir', methods=['POST'])
+@login_required
+def user_follow(username):
+    target = User.query.filter_by(username=username).first_or_404()
+    if target.id == current_user.id:
+        flash('No podés seguirte a vos mismo.', 'warning')
+        return redirect(request.referrer or url_for('reprocann.feed'))
+    existing = Follow.query.filter_by(follower_user_id=current_user.id,
+                                      followee_user_id=target.id).first()
+    if existing:
+        db.session.delete(existing)
+        flash(f'Dejaste de seguir a {target.username}.', 'info')
+    else:
+        db.session.add(Follow(follower_user_id=current_user.id, followee_user_id=target.id))
+        # Notificación al seguido
+        db.session.add(Notification(
+            user_id=target.id,
+            title=f'{current_user.username} empezó a seguirte',
+            message='Tenés un nuevo seguidor en V3K Network',
+            type='social_follow',
+        ))
+        flash(f'Ahora seguís a {target.username}.', 'success')
+    db.session.commit()
+    return redirect(request.referrer or url_for('reprocann.profile_public', username=username))
+
+# ── Perfil público ───────────────────────────────────────────
+
+@reprocann_bp.route('/u/<username>')
+@login_required
+def profile_public(username):
+    u = User.query.filter_by(username=username).first_or_404()
+    profile = UserProfile.query.filter_by(user_id=u.id).first()
+
+    # Privacidad: si es 'private', solo el dueño o moderadores pueden ver
+    is_owner = (u.id == current_user.id)
+    is_mod = _is_moderator(current_user)
+    is_follower = _user_follows(current_user.id, u.id)
+    can_see_full = is_owner or is_mod or (profile and profile.profile_visibility == 'public') or \
+                   (profile and profile.profile_visibility == 'followers' and is_follower)
+
+    posts = []
+    if can_see_full:
+        post_q = Post.query.filter_by(author_user_id=u.id, deleted_at=None,
+                                      moderation_status='approved')
+        # Si no soy dueño/mod, no ver privados
+        if not (is_owner or is_mod):
+            post_q = post_q.filter(Post.visibility != 'private')
+            if not is_follower:
+                post_q = post_q.filter(Post.visibility == 'public')
+        posts = post_q.order_by(Post.created_at.desc()).limit(20).all()
+
+    liked_ids = {pl.post_id for pl in PostLike.query.filter_by(user_id=current_user.id).all()}
+
+    stats = {
+        'posts':     Post.query.filter_by(author_user_id=u.id, deleted_at=None).count(),
+        'followers': Follow.query.filter_by(followee_user_id=u.id).count(),
+        'following': Follow.query.filter_by(follower_user_id=u.id).count(),
+    }
+    am_following = _user_follows(current_user.id, u.id)
+
+    return render_template('reprocann/profile_public.html',
+        u=u, profile=profile, posts=posts, liked_ids=liked_ids,
+        stats=stats, am_following=am_following,
+        can_see_full=can_see_full, is_owner=is_owner)
+
+# ── Lista de seguidores / seguidos ───────────────────────────
+
+@reprocann_bp.route('/u/<username>/seguidores')
+@login_required
+def followers_list(username):
+    u = User.query.filter_by(username=username).first_or_404()
+    rows = Follow.query.filter_by(followee_user_id=u.id).order_by(Follow.created_at.desc()).all()
+    return render_template('reprocann/follow_list.html', users=[r.follower for r in rows],
+                           target=u, tipo='seguidores')
+
+@reprocann_bp.route('/u/<username>/siguiendo')
+@login_required
+def following_list(username):
+    u = User.query.filter_by(username=username).first_or_404()
+    rows = Follow.query.filter_by(follower_user_id=u.id).order_by(Follow.created_at.desc()).all()
+    return render_template('reprocann/follow_list.html', users=[r.followee for r in rows],
+                           target=u, tipo='siguiendo')
+
+# ── Explorar / Sugerencias ───────────────────────────────────
+
+@reprocann_bp.route('/explorar')
+@login_required
+def explorar():
+    following_ids = [f.followee_user_id for f in Follow.query.filter_by(follower_user_id=current_user.id).all()]
+    following_ids.append(current_user.id)
+    profile = UserProfile.query.filter_by(user_id=current_user.id).first()
+
+    base_q = User.query.join(UserProfile, UserProfile.user_id == User.id)\
+                       .filter(User.is_active == True,
+                               ~User.id.in_(following_ids),
+                               UserProfile.verification_status == 'verified')
+
+    # Por provincia
+    by_province = []
+    if profile and profile.province:
+        by_province = base_q.filter(UserProfile.province == profile.province).limit(8).all()
+
+    # Por tipo de perfil
+    by_type = []
+    if profile and profile.profile_type_id:
+        by_type = base_q.filter(UserProfile.profile_type_id == profile.profile_type_id,
+                                UserProfile.province != (profile.province or '')).limit(8).all()
+
+    # Más recientes
+    recent = base_q.order_by(User.created_at.desc()).limit(8).all()
+
+    return render_template('reprocann/explorar.html',
+        by_province=by_province, by_type=by_type, recent=recent)
+
+# ── Moderación de contenido ──────────────────────────────────
+
+@reprocann_bp.route('/moderacion/contenido')
+@login_required
+@moderator_required
+def moderacion_contenido():
+    pendientes = Post.query.filter_by(moderation_status='pending', deleted_at=None)\
+                           .order_by(Post.created_at.desc()).all()
+    reportados_q = db.session.query(Post).join(PostReport).filter(
+        PostReport.status == 'pending', Post.deleted_at.is_(None)
+    ).distinct().all()
+    return render_template('reprocann/moderacion_contenido.html',
+                           pendientes=pendientes, reportados=reportados_q)
+
+@reprocann_bp.route('/moderacion/contenido/<int:id>/aprobar', methods=['POST'])
+@login_required
+@moderator_required
+def moderacion_aprobar(id):
+    p = Post.query.get_or_404(id)
+    p.moderation_status = 'approved'
+    p.moderated_by = current_user.id
+    p.moderated_at = utcnow()
+    db.session.commit()
+    flash('Publicación aprobada.', 'success')
+    return redirect(url_for('reprocann.moderacion_contenido'))
+
+@reprocann_bp.route('/moderacion/contenido/<int:id>/rechazar', methods=['POST'])
+@login_required
+@moderator_required
+def moderacion_rechazar(id):
+    p = Post.query.get_or_404(id)
+    p.moderation_status = 'rejected'
+    p.moderated_by = current_user.id
+    p.moderated_at = utcnow()
+    p.deleted_at = utcnow()
+    db.session.commit()
+    flash('Publicación rechazada.', 'warning')
+    return redirect(url_for('reprocann.moderacion_contenido'))

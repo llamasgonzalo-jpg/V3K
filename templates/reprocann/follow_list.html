@@ -1,0 +1,50 @@
+{% extends "reprocann/_base.html" %}
+{% block title %}{{ target.username }} — {{ tipo|capitalize }}{% endblock %}
+{% block content %}
+
+<div style="max-width:680px; margin:0 auto;">
+  <div style="display:flex; align-items:center; gap:14px; margin-bottom:14px;">
+    <a href="{{ url_for('reprocann.profile_public', username=target.username) }}" class="nw-btn nw-btn-outline nw-btn-sm">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <h1 style="font-size:1.25rem; font-weight:700; margin:0;">
+      {{ tipo|capitalize }} de {{ target.full_name or target.username }}
+    </h1>
+  </div>
+
+  <div class="nw-card">
+    {% if users %}
+    {% for u in users %}
+    <div style="display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--nw-border);">
+      <a href="{{ url_for('reprocann.profile_public', username=u.username) }}" class="suggest-avatar">
+        {{ u.username[0]|upper }}
+      </a>
+      <div style="flex:1; min-width:0;">
+        <a href="{{ url_for('reprocann.profile_public', username=u.username) }}" style="text-decoration:none; color:var(--nw-text); font-weight:600; font-size:.9rem;">
+          {{ u.full_name or u.username }}
+          {% if u.profile and u.profile.verification_status == 'verified' %}
+          <i class="bi bi-patch-check-fill" style="color:var(--nw-accent); font-size:.75rem;"></i>
+          {% endif %}
+        </a>
+        <div style="font-size:.74rem; color:var(--nw-muted);">
+          @{{ u.username }}
+          {% if u.profile and u.profile.profile_type %} · {{ u.profile.profile_type.name }}{% endif %}
+          {% if u.profile and u.profile.province %} · {{ u.profile.province }}{% endif %}
+        </div>
+      </div>
+      {% if u.id != current_user.id %}
+      <form method="POST" action="{{ url_for('reprocann.user_follow', username=u.username) }}" style="margin:0;">
+        <button class="suggest-btn">+ Seguir</button>
+      </form>
+      {% endif %}
+    </div>
+    {% endfor %}
+    {% else %}
+    <p style="color:var(--nw-muted); text-align:center; padding:30px 0;">
+      Aún sin {{ tipo }}.
+    </p>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

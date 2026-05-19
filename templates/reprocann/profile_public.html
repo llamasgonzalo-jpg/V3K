@@ -1,0 +1,102 @@
+{% extends "reprocann/_base.html" %}
+{% block title %}{{ u.full_name or u.username }}{% endblock %}
+{% block content %}
+
+<div style="max-width:780px; margin:0 auto;">
+
+  <div class="nw-card" style="padding:0; overflow:hidden; margin-bottom:14px;">
+    <div style="height:120px; background:linear-gradient(135deg, {{ profile.profile_type.color if profile and profile.profile_type else '#1a8fd1' }}, #0a5fa0);"></div>
+    <div style="padding:0 20px 20px; position:relative; margin-top:-44px;">
+      <div style="width:88px; height:88px; border-radius:50%; background:var(--nw-accent); color:#fff;
+                  display:flex; align-items:center; justify-content:center; font-weight:800; font-size:2.2rem;
+                  border:4px solid var(--nw-card);">
+        {{ u.username[0]|upper }}
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-top:8px;">
+        <div>
+          <h1 style="font-size:1.4rem; font-weight:800; margin:0;">
+            {{ u.full_name or u.username }}
+            {% if profile and profile.verification_status == 'verified' %}
+            <i class="bi bi-patch-check-fill" style="color:var(--nw-accent); font-size:1.05rem;" title="Verificado"></i>
+            {% endif %}
+          </h1>
+          <p style="font-size:.88rem; color:var(--nw-muted); margin:2px 0;">
+            @{{ u.username }}
+            {% if profile and profile.profile_type %}
+            <span class="badge-verified-inline" style="background:{{ profile.profile_type.color or '#1a8fd1' }}22; color:{{ profile.profile_type.color or '#1a8fd1' }};">
+              {{ profile.profile_type.name }}
+            </span>
+            {% endif %}
+          </p>
+          {% if profile and profile.bio %}
+          <p style="font-size:.88rem; color:var(--nw-text); margin:8px 0 0; max-width:500px;">{{ profile.bio }}</p>
+          {% endif %}
+          {% if profile %}
+          <p style="font-size:.78rem; color:var(--nw-muted); margin:6px 0 0;">
+            {% if profile.province %}<i class="bi bi-geo-alt"></i> {{ profile.province }}{% if profile.city %}, {{ profile.city }}{% endif %}{% endif %}
+            {% if profile.province and u.created_at %} · {% endif %}
+            {% if u.created_at %}<i class="bi bi-calendar3"></i> En V3K desde {{ u.created_at.strftime('%m/%Y') }}{% endif %}
+          </p>
+          {% endif %}
+        </div>
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          {% if is_owner %}
+          <a href="{{ url_for('reprocann.perfil') }}" class="nw-btn nw-btn-outline nw-btn-sm">
+            <i class="bi bi-pencil"></i> Editar perfil
+          </a>
+          {% else %}
+          <form method="POST" action="{{ url_for('reprocann.user_follow', username=u.username) }}" style="margin:0;">
+            <button class="nw-btn {{ 'nw-btn-outline' if am_following else 'nw-btn-primary' }}">
+              {% if am_following %}<i class="bi bi-check"></i> Siguiendo{% else %}<i class="bi bi-plus-lg"></i> Seguir{% endif %}
+            </button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+
+      <div style="display:flex; gap:24px; margin-top:18px; padding-top:14px; border-top:1px solid var(--nw-border);">
+        <div style="font-size:.88rem;">
+          <strong style="font-size:1.05rem; display:block; color:var(--nw-text);">{{ stats.posts }}</strong>
+          <small style="color:var(--nw-muted);">Publicaciones</small>
+        </div>
+        <a href="{{ url_for('reprocann.followers_list', username=u.username) }}" style="text-decoration:none; color:inherit; font-size:.88rem;">
+          <strong style="font-size:1.05rem; display:block; color:var(--nw-text);">{{ stats.followers }}</strong>
+          <small style="color:var(--nw-muted);">Seguidores</small>
+        </a>
+        <a href="{{ url_for('reprocann.following_list', username=u.username) }}" style="text-decoration:none; color:inherit; font-size:.88rem;">
+          <strong style="font-size:1.05rem; display:block; color:var(--nw-text);">{{ stats.following }}</strong>
+          <small style="color:var(--nw-muted);">Siguiendo</small>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  {% if not can_see_full %}
+  <div class="nw-card" style="text-align:center; padding:40px 20px;">
+    <i class="bi bi-lock" style="font-size:2.5rem; color:var(--nw-muted);"></i>
+    <h3 style="margin:14px 0 6px; font-size:1.05rem;">Cuenta privada</h3>
+    <p style="font-size:.88rem; color:var(--nw-muted); margin:0;">
+      {% if profile and profile.profile_visibility == 'followers' %}
+      Solo los seguidores aprobados pueden ver las publicaciones.
+      {% else %}
+      Este usuario eligió mantener su perfil privado.
+      {% endif %}
+    </p>
+  </div>
+  {% else %}
+    {% if posts %}
+      <h3 style="font-size:.95rem; font-weight:700; margin:0 0 12px 4px; color:var(--nw-muted); text-transform:uppercase; letter-spacing:.4px;">Publicaciones</h3>
+      {% for p in posts %}
+        {% include 'reprocann/_post_card.html' %}
+      {% endfor %}
+    {% else %}
+      <div class="nw-card" style="text-align:center; padding:30px 20px;">
+        <i class="bi bi-newspaper" style="font-size:2rem; color:var(--nw-muted);"></i>
+        <p style="margin:10px 0 0; color:var(--nw-muted); font-size:.88rem;">Aún no publicó nada.</p>
+      </div>
+    {% endif %}
+  {% endif %}
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends "reprocann/_base.html" %}
+{% set active = 'feed' %}
+{% block title %}Publicación de {{ post.author.username }}{% endblock %}
+{% block content %}
+
+<div style="max-width:640px; margin:0 auto;">
+  <a href="{{ url_for('reprocann.feed') }}" class="nw-btn nw-btn-outline nw-btn-sm" style="margin-bottom:12px;">
+    <i class="bi bi-arrow-left"></i> Volver al feed
+  </a>
+
+  {% set p = post %}
+  {% set liked_ids = [post.id] if liked else [] %}
+  {% include 'reprocann/_post_card.html' %}
+
+  <div class="nw-card" id="comments">
+    <h3 class="nw-card-title"><i class="bi bi-chat icon"></i> Comentarios ({{ comments|length }})</h3>
+
+    <form method="POST" action="{{ url_for('reprocann.post_comment', id=post.id) }}" class="comment-form">
+      <input type="text" name="body" placeholder="Escribí un comentario..." maxlength="500" required>
+      <button type="submit">Comentar</button>
+    </form>
+
+    <div style="margin-top:14px;">
+    {% for c in comments %}
+    <div class="comment-item">
+      <a href="{{ url_for('reprocann.profile_public', username=c.author.username) }}" class="comment-avatar">
+        {{ c.author.username[0]|upper }}
+      </a>
+      <div class="comment-bubble">
+        <strong>
+          <a href="{{ url_for('reprocann.profile_public', username=c.author.username) }}" style="text-decoration:none; color:inherit;">
+            {{ c.author.full_name or c.author.username }}
+          </a>
+        </strong>
+        <span class="meta">{{ c.created_at.strftime('%d/%m %H:%M') if c.created_at else '' }}</span>
+        <div class="body">{{ c.body }}</div>
+      </div>
+    </div>
+    {% else %}
+    <p style="color:var(--nw-muted); font-size:.85rem; text-align:center; padding:14px 0;">
+      Sé el primero en comentar.
+    </p>
+    {% endfor %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}

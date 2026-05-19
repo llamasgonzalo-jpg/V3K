@@ -21,15 +21,20 @@
     {% set is_moderator = user_profile and user_profile.profile_type and user_profile.profile_type.code == 'moderador_v3k' %}
     {% set is_cultivador = user_profile and user_profile.profile_type and user_profile.profile_type.code == 'cultivador_reprocann' %}
     <div class="nw-nav-links">
+        {% if not (is_admin or is_moderator) %}
+        <a href="{{ url_for('reprocann.feed') }}" class="nw-nav-link {% if active=='feed' %}active{% endif %}">
+            <i class="bi bi-house-fill"></i> Inicio
+        </a>
+        <a href="{{ url_for('reprocann.explorar') }}" class="nw-nav-link {% if active=='explorar' %}active{% endif %}">
+            <i class="bi bi-compass"></i> Explorar
+        </a>
+        {% endif %}
         {% if is_cultivador %}
         <a href="{{ url_for('reprocann.dashboard') }}" class="nw-nav-link {% if active=='dashboard' %}active{% endif %}">
-            <i class="bi bi-house"></i> Inicio
+            <i class="bi bi-speedometer2"></i> Mi panel
         </a>
         <a href="{{ url_for('reprocann.cultivos') }}" class="nw-nav-link {% if active=='cultivos' %}active{% endif %}">
             <i class="bi bi-flower1"></i> Mis Cultivos
-        </a>
-        <a href="{{ url_for('reprocann.reporte_rpcci') }}" class="nw-nav-link {% if active=='reporte' %}active{% endif %}">
-            <i class="bi bi-file-earmark-text"></i> Reporte RPCCI
         </a>
         {% endif %}
         {% if is_admin or is_moderator %}
@@ -41,6 +46,9 @@
         </a>
         <a href="{{ url_for('reprocann.moderacion_suscripciones') }}" class="nw-nav-link">
             <i class="bi bi-cash-stack"></i> Suscripciones
+        </a>
+        <a href="{{ url_for('reprocann.moderacion_contenido') }}" class="nw-nav-link {% if active=='mod_contenido' %}active{% endif %}">
+            <i class="bi bi-chat-square-text"></i> Contenido
         </a>
         {% if is_admin %}
         <a href="{{ url_for('main.dashboard') }}" class="nw-nav-link" style="margin-left:auto; color:var(--nw-muted);">

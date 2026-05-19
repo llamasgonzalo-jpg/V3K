@@ -299,7 +299,320 @@ body.network {
 .nw-feature h3 { font-size: .98rem; margin-bottom: 6px; color: var(--nw-text); }
 .nw-feature p { font-size: .84rem; color: var(--nw-muted); margin: 0; line-height: 1.5; }
 
-/* ── Responsive ── */
+/* ═══════ FEED SOCIAL (3 columnas LinkedIn-style) ═══════ */
+.feed-grid {
+  display: grid;
+  grid-template-columns: 240px 1fr 280px;
+  gap: 16px;
+  align-items: flex-start;
+}
+.feed-side { position: sticky; top: 80px; }
+
+/* Profile card sidebar */
+.profile-card {
+  background: var(--nw-card);
+  border: 1px solid var(--nw-border);
+  border-radius: var(--nw-radius);
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.profile-card .cover {
+  height: 60px;
+  background: linear-gradient(135deg, #1a8fd1, #8b5cf6);
+}
+.profile-card .body {
+  padding: 8px 14px 14px;
+  text-align: center;
+  position: relative;
+  margin-top: -28px;
+}
+.profile-card .avatar {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: var(--nw-accent);
+  border: 3px solid var(--nw-card);
+  display: inline-flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 800; font-size: 1.25rem;
+  margin-bottom: 6px;
+}
+.profile-card .name { font-size: .95rem; font-weight: 700; color: var(--nw-text); }
+.profile-card .type-badge { font-size: .7rem; color: var(--nw-muted); margin-top: 2px; }
+.profile-card .stats {
+  display: flex; justify-content: space-around;
+  padding: 10px 0; margin-top: 8px;
+  border-top: 1px solid var(--nw-border);
+}
+.profile-card .stats div { text-align: center; flex: 1; }
+.profile-card .stats strong { display: block; font-size: 1rem; color: var(--nw-text); }
+.profile-card .stats span { font-size: .7rem; color: var(--nw-muted); }
+
+/* Sidebar menu */
+.side-menu {
+  background: var(--nw-card);
+  border: 1px solid var(--nw-border);
+  border-radius: var(--nw-radius);
+  padding: 8px;
+  margin-bottom: 12px;
+}
+.side-menu a {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px;
+  font-size: .88rem; color: var(--nw-text);
+  text-decoration: none;
+  border-radius: 6px;
+  transition: background .15s;
+}
+.side-menu a:hover { background: var(--nw-accent-lt); color: var(--nw-accent); }
+.side-menu a i { color: var(--nw-muted); font-size: 1rem; }
+
+/* Composer (¿Qué querés contar?) */
+.composer {
+  background: var(--nw-card);
+  border: 1px solid var(--nw-border);
+  border-radius: var(--nw-radius);
+  padding: 14px;
+  margin-bottom: 14px;
+}
+.composer-top { display: flex; gap: 10px; align-items: center; }
+.composer-top .avatar {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--nw-accent); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; flex-shrink: 0;
+}
+.composer-input {
+  flex: 1;
+  padding: 10px 16px;
+  border: 1px solid var(--nw-border);
+  border-radius: 100px;
+  font-size: .92rem; color: var(--nw-text);
+  cursor: pointer; background: var(--nw-bg);
+}
+.composer-input:hover { background: var(--nw-accent-lt); }
+.composer-actions {
+  display: flex; gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--nw-border);
+}
+.composer-action {
+  flex: 1; padding: 8px;
+  border: none; background: transparent;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  border-radius: 6px;
+  font-size: .82rem; color: var(--nw-muted);
+  cursor: pointer; transition: background .15s;
+}
+.composer-action:hover { background: var(--nw-bg); color: var(--nw-accent); }
+
+/* Post card */
+.post-card {
+  background: var(--nw-card);
+  border: 1px solid var(--nw-border);
+  border-radius: var(--nw-radius);
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+.post-header {
+  padding: 12px 16px;
+  display: flex; gap: 10px; align-items: flex-start;
+}
+.post-avatar {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--nw-accent); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 1rem; flex-shrink: 0;
+  text-decoration: none;
+}
+.post-author { flex: 1; min-width: 0; }
+.post-author a { color: var(--nw-text); text-decoration: none; font-weight: 700; font-size: .9rem; }
+.post-author a:hover { color: var(--nw-accent); }
+.post-verified { color: var(--nw-accent); font-size: .85rem; vertical-align: 1px; }
+.post-meta { font-size: .72rem; color: var(--nw-muted); margin-top: 2px; }
+.post-meta .dot { margin: 0 4px; }
+.post-menu {
+  background: transparent; border: none; padding: 4px 8px;
+  color: var(--nw-muted); cursor: pointer; border-radius: 6px;
+}
+.post-menu:hover { background: var(--nw-bg); }
+
+.post-body {
+  padding: 0 16px 12px;
+  font-size: .92rem; color: var(--nw-text); line-height: 1.5;
+  white-space: pre-wrap; word-wrap: break-word;
+}
+.post-media-grid {
+  display: grid;
+  gap: 2px;
+  background: var(--nw-bg);
+}
+.post-media-grid.one { grid-template-columns: 1fr; }
+.post-media-grid.two { grid-template-columns: 1fr 1fr; }
+.post-media-grid.three, .post-media-grid.four { grid-template-columns: 1fr 1fr; }
+.post-media-grid img {
+  width: 100%; height: 100%; object-fit: cover;
+  max-height: 380px; display: block;
+}
+
+.post-stats {
+  display: flex; justify-content: space-between;
+  padding: 8px 16px; font-size: .75rem; color: var(--nw-muted);
+  border-bottom: 1px solid var(--nw-border);
+}
+
+.post-actions {
+  display: flex;
+  padding: 4px;
+}
+.post-action {
+  flex: 1; padding: 8px;
+  border: none; background: transparent;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  border-radius: 6px;
+  font-size: .82rem; font-weight: 600; color: var(--nw-muted);
+  cursor: pointer; transition: all .15s;
+  text-decoration: none;
+}
+.post-action:hover { background: var(--nw-bg); color: var(--nw-accent); }
+.post-action.liked { color: #ef4444; }
+.post-action.liked:hover { background: #fee2e2; }
+
+/* Comments */
+.comments-section {
+  background: var(--nw-bg);
+  padding: 10px 16px;
+  border-top: 1px solid var(--nw-border);
+}
+.comment-item {
+  display: flex; gap: 8px;
+  padding: 8px 0;
+}
+.comment-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--nw-accent-lt); color: var(--nw-accent);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: .8rem; flex-shrink: 0;
+  text-decoration: none;
+}
+.comment-bubble {
+  flex: 1;
+  background: var(--nw-card);
+  border: 1px solid var(--nw-border);
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-size: .85rem;
+}
+.comment-bubble strong { font-size: .82rem; color: var(--nw-text); }
+.comment-bubble .meta { font-size: .68rem; color: var(--nw-muted); margin-left: 6px; }
+.comment-bubble .body { color: var(--nw-text); margin-top: 2px; }
+
+.comment-form {
+  display: flex; gap: 8px;
+  margin-top: 10px;
+}
+.comment-form input {
+  flex: 1; padding: 8px 14px;
+  border: 1px solid var(--nw-border);
+  border-radius: 100px;
+  font-size: .85rem; background: var(--nw-card);
+}
+.comment-form input:focus { outline: none; border-color: var(--nw-accent); }
+.comment-form button {
+  padding: 8px 16px;
+  background: var(--nw-accent); color: #fff;
+  border: none; border-radius: 100px;
+  font-size: .82rem; font-weight: 600; cursor: pointer;
+}
+
+/* Sugerencias laterales */
+.suggest-card {
+  background: var(--nw-card);
+  border: 1px solid var(--nw-border);
+  border-radius: var(--nw-radius);
+  padding: 14px;
+  margin-bottom: 12px;
+}
+.suggest-card-title {
+  font-size: .82rem; font-weight: 700; color: var(--nw-text);
+  margin-bottom: 10px;
+}
+.suggest-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 0; border-bottom: 1px solid var(--nw-border);
+}
+.suggest-item:last-child { border-bottom: none; }
+.suggest-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--nw-accent); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: .85rem; flex-shrink: 0;
+  text-decoration: none;
+}
+.suggest-info { flex: 1; min-width: 0; }
+.suggest-info a { color: var(--nw-text); text-decoration: none; font-weight: 600; font-size: .82rem; display: block; }
+.suggest-info a:hover { color: var(--nw-accent); }
+.suggest-info small { font-size: .7rem; color: var(--nw-muted); }
+.suggest-btn {
+  padding: 4px 10px;
+  font-size: .72rem; font-weight: 600;
+  border: 1px solid var(--nw-accent); color: var(--nw-accent);
+  background: transparent;
+  border-radius: 100px; cursor: pointer; white-space: nowrap;
+  text-decoration: none;
+}
+.suggest-btn:hover { background: var(--nw-accent-lt); }
+
+/* Modal de crear post */
+.post-modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.45);
+  display: none; align-items: flex-start; justify-content: center;
+  padding-top: 6vh;
+  z-index: 1000;
+}
+.post-modal-overlay.show { display: flex; }
+.post-modal {
+  background: var(--nw-card);
+  border-radius: var(--nw-radius);
+  width: 100%; max-width: 560px;
+  padding: 20px;
+  box-shadow: 0 10px 40px rgba(0,0,0,.2);
+}
+.post-modal h3 { font-size: 1rem; font-weight: 700; margin-bottom: 14px; }
+.post-modal textarea {
+  width: 100%; min-height: 120px;
+  border: none; resize: vertical;
+  font-size: 1rem; color: var(--nw-text);
+  background: var(--nw-bg); padding: 12px;
+  border-radius: 8px;
+}
+.post-modal textarea:focus { outline: none; }
+.post-modal-footer {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 14px;
+  padding-top: 14px; border-top: 1px solid var(--nw-border);
+}
+
+/* Verified badge inline */
+.badge-verified-inline {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: .68rem; padding: 2px 7px;
+  background: var(--nw-accent-lt); color: var(--nw-accent);
+  border-radius: 100px; font-weight: 600;
+  margin-left: 4px;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .feed-grid { grid-template-columns: 1fr 280px; }
+  .feed-side.left { display: none; }
+}
+@media (max-width: 720px) {
+  .feed-grid { grid-template-columns: 1fr; }
+  .feed-side { position: static; }
+  .feed-side.right { display: none; }
+}
+
+/* ── Responsive base ── */
 @media (max-width: 900px) {
   .nw-kpis { grid-template-columns: repeat(2, 1fr); }
   .nw-features { grid-template-columns: 1fr; }
