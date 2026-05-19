@@ -58,7 +58,12 @@
         {% endif %}
     </div>
     <a href="{{ url_for('reprocann.perfil') }}" class="nw-nav-user">
+        {% set up = current_user.profile if current_user.profile else none %}
+        {% if up and up.avatar_path %}
+        <span class="nw-avatar" style="background-image:url('{{ url_for('reprocann.feed_file', filename=up.avatar_path) }}'); background-size:cover; background-position:center; color:transparent;"></span>
+        {% else %}
         <span class="nw-avatar">{{ current_user.username[0]|upper }}</span>
+        {% endif %}
         <span>{{ current_user.username }}</span>
     </a>
     <a href="{{ url_for('auth.logout') }}" class="nw-nav-link" title="Salir">

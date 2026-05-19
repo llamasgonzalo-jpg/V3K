@@ -7,11 +7,15 @@
   <div class="nw-card" style="padding:0; overflow:hidden; margin-bottom:14px;">
     <div style="height:120px; background:linear-gradient(135deg, {{ profile.profile_type.color if profile and profile.profile_type else '#1a8fd1' }}, #0a5fa0);"></div>
     <div style="padding:0 20px 20px; position:relative; margin-top:-44px;">
+      {% if profile and profile.avatar_path %}
+      <div style="width:88px; height:88px; border-radius:50%; background-image:url('{{ url_for('reprocann.feed_file', filename=profile.avatar_path) }}'); background-size:cover; background-position:center; border:4px solid var(--nw-card); box-shadow:0 0 0 1px var(--nw-border);"></div>
+      {% else %}
       <div style="width:88px; height:88px; border-radius:50%; background:var(--nw-accent); color:#fff;
                   display:flex; align-items:center; justify-content:center; font-weight:800; font-size:2.2rem;
                   border:4px solid var(--nw-card);">
         {{ u.username[0]|upper }}
       </div>
+      {% endif %}
       <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-top:8px;">
         <div>
           <h1 style="font-size:1.4rem; font-weight:800; margin:0;">

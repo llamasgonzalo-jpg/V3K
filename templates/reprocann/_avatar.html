@@ -1,0 +1,25 @@
+{#
+  Macro para renderizar un avatar consistente.
+  Uso: {{ avatar(user, size=44, link=true, classes='post-avatar') }}
+  - user: objeto User (debe tener .username y .profile)
+  - size: tamaño en px (default 44)
+  - link: si true, envuelve en un <a> al perfil público
+  - classes: clases CSS extra (post-avatar, comment-avatar, suggest-avatar, etc.)
+#}
+{% macro avatar(user, size=44, link=true, classes='', extra_style='') -%}
+{%- set p = user.profile if (user and user.profile) else none -%}
+{%- set img = p.avatar_path if (p and p.avatar_path) else none -%}
+{%- set initial = (user.username[0]|upper) if user else '?' -%}
+{%- if link and user -%}
+<a href="{{ url_for('reprocann.profile_public', username=user.username) }}"
+   class="{{ classes }}"
+   style="{% if img %}background-image:url('{{ url_for('reprocann.feed_file', filename=img) }}'); background-size:cover; background-position:center; color:transparent;{% endif %} {{ extra_style }}">
+{%- if not img -%}{{ initial }}{%- endif -%}
+</a>
+{%- else -%}
+<span class="{{ classes }}"
+      style="{% if img %}background-image:url('{{ url_for('reprocann.feed_file', filename=img) }}'); background-size:cover; background-position:center; color:transparent;{% endif %} {{ extra_style }}">
+{%- if not img -%}{{ initial }}{%- endif -%}
+</span>
+{%- endif -%}
+{%- endmacro %}

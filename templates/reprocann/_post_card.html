@@ -4,11 +4,10 @@
     p = el post (Post)
     liked_ids = set de IDs de posts que liked el usuario actual
 #}
+{% from 'reprocann/_avatar.html' import avatar %}
 <article class="post-card" id="post-{{ p.id }}">
   <header class="post-header">
-    <a href="{{ url_for('reprocann.profile_public', username=p.author.username) }}" class="post-avatar">
-      {{ p.author.username[0]|upper }}
-    </a>
+    {{ avatar(p.author, classes='post-avatar') }}
     <div class="post-author">
       <a href="{{ url_for('reprocann.profile_public', username=p.author.username) }}">
         {{ p.author.full_name or p.author.username }}

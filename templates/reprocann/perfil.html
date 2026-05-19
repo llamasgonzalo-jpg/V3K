@@ -18,6 +18,34 @@
     </div>
 </div>
 
+<div class="nw-card" style="display:flex; align-items:center; gap:18px;">
+    <div style="position:relative;">
+    {% if profile.avatar_path %}
+    <div style="width:88px; height:88px; border-radius:50%; background-image:url('{{ url_for('reprocann.feed_file', filename=profile.avatar_path) }}'); background-size:cover; background-position:center;
+                border:3px solid var(--nw-card); box-shadow:0 0 0 1px var(--nw-border);"></div>
+    {% else %}
+    <div style="width:88px; height:88px; border-radius:50%; background:var(--nw-accent); color:#fff;
+                display:flex; align-items:center; justify-content:center; font-weight:800; font-size:2rem;
+                border:3px solid var(--nw-card); box-shadow:0 0 0 1px var(--nw-border);">
+        {{ current_user.username[0]|upper }}
+    </div>
+    {% endif %}
+    </div>
+    <div style="flex:1;">
+        <h3 style="margin:0; font-size:1rem; font-weight:700;">{{ current_user.full_name or current_user.username }}</h3>
+        <p style="margin:2px 0 0; font-size:.8rem; color:var(--nw-muted);">
+            {% if profile.profile_type %}{{ profile.profile_type.name }} · {% endif %}@{{ current_user.username }}
+        </p>
+        <form method="POST" action="{{ url_for('reprocann.upload_avatar') }}" enctype="multipart/form-data" style="margin-top:8px;">
+            <label class="nw-btn nw-btn-outline nw-btn-sm" style="cursor:pointer; margin:0;">
+                <i class="bi bi-camera"></i> Cambiar foto de perfil
+                <input type="file" name="avatar" accept="image/png,image/jpeg,image/webp" required onchange="this.form.submit()" style="display:none;">
+            </label>
+            <small style="color:var(--nw-muted); font-size:.72rem; margin-left:8px;">PNG/JPG/WEBP — se recorta y comprime automáticamente a 400×400.</small>
+        </form>
+    </div>
+</div>
+
 <div class="row">
 <div class="col-lg-8">
 <div class="nw-card">

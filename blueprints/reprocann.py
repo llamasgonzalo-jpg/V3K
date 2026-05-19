@@ -355,6 +355,52 @@ def perfil():
 
 # ── Subir documentos de verificación ──────────────────────────
 
+@reprocann_bp.route('/perfil/avatar', methods=['POST'])
+@login_required
+def upload_avatar():
+    """Subir foto de perfil del usuario."""
+    profile = UserProfile.query.filter_by(user_id=current_user.id).first()
+    if not profile:
+        abort(404)
+    file = request.files.get('avatar')
+    if not file or not file.filename:
+        flash('No se seleccionó ninguna imagen.', 'warning')
+        return redirect(request.referrer or url_for('reprocann.perfil'))
+    ext = (file.filename.rsplit('.', 1)[-1] or '').lower()
+    if ext not in {'png', 'jpg', 'jpeg', 'webp'}:
+        flash('Formato no permitido. Usá PNG, JPG o WEBP.', 'danger')
+        return redirect(request.referrer or url_for('reprocann.perfil'))
+    upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'network', str(current_user.id))
+    os.makedirs(upload_dir, exist_ok=True)
+    # Convertir a JPEG cuadrado de 400x400 para uniformidad
+    try:
+        from PIL import Image as PILImage
+        img = PILImage.open(file)
+        img = img.convert('RGB')
+        # Crop cuadrado centrado
+        w, h = img.size
+        side = min(w, h)
+        left = (w - side) // 2
+        top = (h - side) // 2
+        img = img.crop((left, top, left + side, top + side))
+        img = img.resize((400, 400), PILImage.LANCZOS)
+        fname = f"avatar_{uuid.uuid4().hex[:8]}.jpg"
+        fpath = os.path.join(upload_dir, fname)
+        img.save(fpath, 'JPEG', quality=88, optimize=True)
+    except Exception as e:
+        flash(f'Error procesando la imagen: {e}', 'danger')
+        return redirect(request.referrer or url_for('reprocann.perfil'))
+    # Borrar avatar anterior si existía
+    if profile.avatar_path:
+        old = os.path.join(current_app.config['UPLOAD_FOLDER'], profile.avatar_path)
+        if os.path.exists(old):
+            try: os.remove(old)
+            except: pass
+    profile.avatar_path = os.path.join('network', str(current_user.id), fname).replace('\\', '/')
+    db.session.commit()
+    flash('Foto de perfil actualizada.', 'success')
+    return redirect(request.referrer or url_for('reprocann.perfil'))
+
 @reprocann_bp.route('/perfil/upload-doc', methods=['POST'])
 @login_required
 def upload_doc():

@@ -1,4 +1,5 @@
 {% extends "reprocann/_base.html" %}
+{% from 'reprocann/_avatar.html' import avatar %}
 {% block title %}{{ target.username }} — {{ tipo|capitalize }}{% endblock %}
 {% block content %}
 
@@ -16,9 +17,7 @@
     {% if users %}
     {% for u in users %}
     <div style="display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--nw-border);">
-      <a href="{{ url_for('reprocann.profile_public', username=u.username) }}" class="suggest-avatar">
-        {{ u.username[0]|upper }}
-      </a>
+      {{ avatar(u, classes='suggest-avatar') }}
       <div style="flex:1; min-width:0;">
         <a href="{{ url_for('reprocann.profile_public', username=u.username) }}" style="text-decoration:none; color:var(--nw-text); font-weight:600; font-size:.9rem;">
           {{ u.full_name or u.username }}
