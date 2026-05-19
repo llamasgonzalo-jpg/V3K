@@ -266,6 +266,14 @@ def login():
 def dashboard():
     profile = UserProfile.query.filter_by(user_id=current_user.id).first()
     sub = Subscription.query.filter_by(user_id=current_user.id).first()
+    # Si por algún motivo no existe suscripción, la creamos en pending
+    if not sub:
+        pt = profile.profile_type if profile else None
+        sub = Subscription(user_id=current_user.id,
+                           profile_type_id=pt.id if pt else None,
+                           status='pending')
+        db.session.add(sub)
+        db.session.commit()
     cultivos = ReprocannCultivo.query.filter_by(user_id=current_user.id).order_by(ReprocannCultivo.created_at.desc()).all()
     total_plants = sum(c.plant_count or 0 for c in cultivos if c.status == 'active')
     total_harvested = db.session.query(db.func.coalesce(db.func.sum(ReprocannHarvest.dry_weight_g), 0))\

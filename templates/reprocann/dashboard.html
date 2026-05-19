@@ -16,12 +16,12 @@
 </div>
 
 {# Banners de estado #}
-{% if profile.verification_status != 'verified' %}
+{% if not profile or profile.verification_status != 'verified' %}
 <div class="nw-alert nw-alert-warning">
     <i class="bi bi-shield-exclamation"></i>
     <div style="flex:1;">
         <strong>Verificá tu cuenta.</strong>
-        {% if profile.verification_status == 'pending' %}
+        {% if not profile or profile.verification_status == 'pending' %}
         Subí tu DNI y constancia REPROCANN en tu perfil para que un moderador apruebe tu cuenta.
         {% elif profile.verification_status == 'in_review' %}
         Documentación enviada — esperando aprobación de un moderador.
@@ -33,11 +33,11 @@
 </div>
 {% endif %}
 
-{% if subscription.status != 'active' %}
+{% if not subscription or subscription.status != 'active' %}
 <div class="nw-alert nw-alert-info">
     <i class="bi bi-credit-card"></i>
     <div style="flex:1;">
-        <strong>Suscripción {{ 'pendiente' if subscription.status=='pending' else 'vencida' }}.</strong>
+        <strong>Suscripción {{ 'pendiente' if not subscription or subscription.status=='pending' else 'vencida' }}.</strong>
         Para registrar nuevos cultivos y eventos necesitás suscripción activa ($5.000/mes).
         Un administrador la activará tras confirmar el pago.
     </div>
