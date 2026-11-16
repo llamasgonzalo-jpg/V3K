@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: v3k-network
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn wsgi:app --workers 1 --threads 2 --timeout 120
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.0"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        value: ""   # Pegar aquí la URL de Neon después de crear la base de datos
+      - key: UPLOAD_FOLDER
+        value: /tmp/uploads
