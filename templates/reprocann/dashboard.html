@@ -46,7 +46,7 @@
     <i class="bi bi-exclamation-octagon"></i>
     <div style="flex:1;">
         <strong>Tu suscripción venció.</strong>
-        Comunicate con el administrador para renovarla ($5.000/mes) y seguir registrando cultivos.
+        Comunicate con el administrador para renovar el acceso y seguir registrando cultivos.
     </div>
 </div>
 {% elif subscription.status == 'active' and subscription.payment_method == 'trial' %}
@@ -55,7 +55,7 @@
     <i class="bi bi-stars"></i>
     <div style="flex:1;">
         <strong>Trial gratuito activo</strong> — te quedan <strong>{{ dias }} día{{ 's' if dias != 1 else '' }}</strong> de prueba.
-        Al vencer, contactá al administrador para suscribirte ($5.000/mes).
+        Al vencer, contactá al administrador para continuar con el acceso.
     </div>
 </div>
 {% elif subscription.status == 'active' %}
